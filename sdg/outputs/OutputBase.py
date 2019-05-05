@@ -1,17 +1,34 @@
+import os
+
 class OutputBase:
     """Base class for destinations of SDG data/metadata."""
 
-    def __init__(self, inputs, output_folder=''):
+    def __init__(self, inputs, schema, output_folder=''):
         """Constructor for OutputBase."""
         self.indicators = self.merge_inputs(inputs)
+        self.schema = schema
         self.output_folder = output_folder
 
+        # Make sure the output folder exists.
+        if not os.path.exists(output_folder):
+            os.makedirs(output_folder, exist_ok=True)
+
     def execute():
-        """Write the SDG output to disk."""
+        """Write the SDG output to disk.
+
+        All subclasses must override this method.
+        """
         raise NotImplementedError
 
     def merge_inputs(self, inputs):
-        """Take the results of many inputs and merge into a single dict of indicators."""
+        """Take the results of many inputs and merge into a single dict of indicators.
+
+        Args:
+            inputs -- list: A list of InputBase (subclassed) objects
+
+        Return:
+            merged_indicators -- dict: Indicator objects keyed by indicator id
+        """
         merged_indicators = {}
         for input in inputs:
             # Fetch the input.

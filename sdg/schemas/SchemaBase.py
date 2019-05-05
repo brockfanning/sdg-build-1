@@ -1,22 +1,31 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Mar  5 14:24:13 2019
-
-@author: dashton
-"""
 
 import json
 import os
-from sdg.json import write_json
-
-# %% SchemaBase Class
-
+from jsonschema import validate
 
 class SchemaBase:
     """
-    The SchemaBase includes base functionality for loading in info about the
-    metadata fields. We can check for information about the fields, as well as
-    writing out to the data service
+    This base class serves 2 purposes:
+    1. Performs the validation of an indicator's metadata.
+    2. Outputs the full schema to JSON file for use by platforms.
+
+    Subclasses are necessary to add the following functionality:
+    1. Import from arbitrary schema formats into (internal) JSON Schema.
+
+    GOALS:
+    1. This class outputs to simple (backwards-compatible with Open SDG) JSON.
+    2. This class outputs to valid JSON Schema.
+    3. This class requires subclasses to implement load_schema().
+    4. This class expects the internal schema to be valid JSON Schema.
+    5. This class can validate against an Indicator object.
+    6. This class uses JSON Schema to validate against that object.
+    7. THIS CLASS DOES NOT MENTION VALIDATION OF DATA.
+
+    ISSUES:
+    1. We need to insert "translation_key" properties into fields. Because
+       platforms might need to translate stuff, and often use keys.
+    2.
     """
 
 
@@ -67,6 +76,13 @@ class SchemaBase:
 
     def get_defaults(self):
         return self.schema_defaults
+
+    def validate(self, indicator):
+        """Validate the data and/or metadata for an Indicator object."""
+        status = True
+        if indicator.has_meta():
+            status = status & self.validate_meta(indicator)
+        return status
 
 
     def get(self, field, default=None, must_exist=False):

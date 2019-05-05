@@ -96,14 +96,14 @@ def df_to_list_dict(df, orient='records'):
     expected_orient = ['list', 'records']
     if orient not in expected_orient:
         raise ValueError("orient must be on of: " + ", ".join(expected_orient))
-   
+
     if df.shape[0] < 1:
         return list()
     else:
         return df_nan_to_none(df, orient=orient)
 
 # %% Write one data frame to JSON
-    
+
 
 def write_json(inid, obj, ftype='data', gz=False, site_dir=''):
     """Write out the supplied object as a single json file. This can
@@ -122,7 +122,7 @@ def write_json(inid, obj, ftype='data', gz=False, site_dir=''):
     try:
         out_json = pd.io.json.dumps(obj)
         out_json = out_json.replace("\\/", "/")  # why does it double escape?
-        
+
         json_dir = output_path(ftype=ftype, format='json', site_dir=site_dir)
         if not os.path.exists(json_dir):
             os.makedirs(json_dir, exist_ok=True)
@@ -139,6 +139,37 @@ def write_json(inid, obj, ftype='data', gz=False, site_dir=''):
                 outfile.write(out_json)
     except Exception as e:
         print(inid, e)
+        return False
+
+    return True
+
+
+def write(obj, subpath, folder=''):
+    """A more general-purpose alternative to write_json().
+
+    Args:
+        obj -- dict or list: A json ready dict/list
+        subpath -- str: Filename or path to write
+        folder -- str: Optional folder in which to put the subpath
+
+    Return:
+        status. bool.
+    """
+
+    output_path = subpath
+    if folder:
+        output_path = os.path.join(folder, subpath)
+
+    # Make sure the output folder exists.
+    file_folder = os.path.dirname(output_path)
+    if not os.path.exists(file_folder):
+        os.makedirs(file_folder, exist_ok=True)
+
+    try:
+        with open(output_path, 'w', encoding='utf-8') as outfile:
+            json.dump(obj, outfile)
+    except Exception as e:
+        print(output_path, e)
         return False
 
     return True
