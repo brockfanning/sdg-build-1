@@ -15,18 +15,18 @@ from sdg.path import input_path, get_ids
 
 def check_meta(meta, fname):
     """Check an individual metadata and return logical status"""
-    
+
     # As the number of checks increase you may want to think of a more scalable way to do this
 
     status = True
-    
+
     status = status & check_required(meta, fname)
     status = status & check_reporting_status(meta, fname)
 
     # Should this indicator have a chart?
     meta['check_graph'] = (
       meta['reporting_status'] == 'complete' and
-      meta['published'] and 
+      meta['published'] and
       not meta['data_non_statistical']
     )
 
@@ -52,7 +52,7 @@ def check_required(meta, fname):
         if('data_non_statistical' not in meta):
             print("data_non_statistical" + " missing in " + fname + " for published reported indicator")
             status = False
-        
+
     return status
 
 # %% Check for reporting status
@@ -60,22 +60,22 @@ def check_required(meta, fname):
 
 def check_reporting_status(meta, fname):
     """Check an individual metadata and return logical status"""
-    
+
     status = True
-    
+
     if("reporting_status" not in meta):
         print("reporting_status missing in " + fname)
         status = False
     else:
         valid_statuses = ['notstarted', 'inprogress', 'complete', 'notapplicable']
-        
+
         if(meta["reporting_status"] not in valid_statuses):
             err_str = "invalid reporting_status in " + fname + ": " \
                       + meta["reporting_status"] + " must be one of " \
                       + str(valid_statuses)
             print(err_str)
             status = False
-        
+
     return status
 
 # %% Check graph type
@@ -96,7 +96,7 @@ def check_graph(meta, fname):
             print('graph_type missing for published statistical indicator in ' + fname)
             return False
 
-        valid_graph_types = ['line', 'bar', 'binary']
+        valid_graph_types = ['line', 'bar', 'binary', 'stacked-bar']
 
         if(meta["graph_type"] not in valid_graph_types):
             err_str = "invalid graph_type in " + fname + ": " \
@@ -104,16 +104,16 @@ def check_graph(meta, fname):
                       + str(valid_graph_types)
             print(err_str)
             status = False
-        
+
     return status
 
 # %% Read each yaml and run the checks
 
 def check_all_meta(src_dir=''):
     """Run metadata checks for all indicators
-    
+
     Args:
-        src_dir: str. Base path for the project. Metadata 
+        src_dir: str. Base path for the project. Metadata
             files are found relative to this
     """
 
@@ -123,13 +123,13 @@ def check_all_meta(src_dir=''):
 
     if len(ids) == 0:
         raise FileNotFoundError("No indicator IDs found")
-    
+
     print("Checking " + str(len(ids)) + " metadata files...")
-    
+
     for inid in ids:
         met = input_path(inid, ftype='meta', src_dir=src_dir, must_work=True)
         with open(met, encoding = "UTF-8") as stream:
             meta = next(yaml.safe_load_all(stream))
         status = status & check_meta(meta, fname = met)
-    
+
     return(status)
