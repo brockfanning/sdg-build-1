@@ -81,9 +81,9 @@ def detect_all_edges(inid, df):
         a_not_empty = not df[a].dropna().empty
         b_not_empty = not df[b].dropna().empty
 
-        print '**************** ' + inid + ' *****************'
-        print 'a: ' + a
-        print 'b: ' + b
+        print('**************** ' + inid + ' *****************')
+        print('a: ' + a)
+        print('b: ' + b)
         if a_without_b:
             print('a_without_b')
         if b_without_a:
