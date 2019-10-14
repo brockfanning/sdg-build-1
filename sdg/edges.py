@@ -86,7 +86,13 @@ def detect_all_edges(inid, df):
         if a_without_b and not b_without_a and b_not_empty:
             # A is a parent of B
             # so add to df of edges
-            print(inid + a + '-' + b + ' - 1')
+            print(inid + ' ' + a + ' -> ' + b + ' - 1')
+            if a_without_b:
+                print('a_without_b')
+            if b_without_a:
+                print('b_without_a')
+            if b_not_empty:
+                print('b_not_empty')
             edges = edges.append(pd.DataFrame({'From': [a], 'To': [b]}))
 
         # if ab is not an edge, test whether ba is an edge
@@ -94,14 +100,14 @@ def detect_all_edges(inid, df):
         elif b_without_a and not a_without_b and a_not_empty:
             # B is a parent of A
             # so add to df of edges
-            print(inid + b + '-' + a + ' - 2')
+            #print(inid + b + '-' + a + ' - 2')
             edges = edges.append(pd.DataFrame({'From': [b], 'To': [a]}))
 
         # if ab not an edge and ba not an edge, then test that for every
         # element in a there is an element in b and vice versa
         elif not a_without_b and not b_without_a and a_not_empty and b_not_empty:
             # co-depedent; choose A as left-most
-            print(inid + a + '-' + b + ' - 3')
+            #print(inid + a + '-' + b + ' - 3')
             edges = edges.append(pd.DataFrame({'From': [a], 'To': [b]}))
 
     return edges
