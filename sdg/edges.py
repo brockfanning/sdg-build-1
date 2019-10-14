@@ -81,18 +81,19 @@ def detect_all_edges(inid, df):
         a_not_empty = not df[a].dropna().empty
         b_not_empty = not df[b].dropna().empty
 
+        if a_without_b:
+            print('a_without_b')
+        if b_without_a:
+            print('b_without_a')
+        if b_not_empty:
+            print('b_not_empty')
+
         # test if ab is an edge (at least one case where b has an empty
         # elements where a does not)
         if a_without_b and not b_without_a and b_not_empty:
             # A is a parent of B
             # so add to df of edges
             print(inid + ' ' + a + ' -> ' + b + ' - 1')
-            if a_without_b:
-                print('a_without_b')
-            if b_without_a:
-                print('b_without_a')
-            if b_not_empty:
-                print('b_not_empty')
             edges = edges.append(pd.DataFrame({'From': [a], 'To': [b]}))
 
         # if ab is not an edge, test whether ba is an edge
