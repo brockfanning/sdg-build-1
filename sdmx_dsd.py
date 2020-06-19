@@ -11,3 +11,4 @@ dsd_path = os.path.join('tests', 'sdmx', 'dsd.xml')
 map_folder_path = os.path.join('tests', 'sdmx', 'map_files')
 
 sdmx_dsd_service = sdg.SdmxDsdService(inputs, map_folder_path, dsd_path)
+sdmx_dsd_service.write_excel_maps()

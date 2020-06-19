@@ -84,11 +84,25 @@ class SdmxDsdService(OutputBase):
             codelist_from_data = self.get_codelist_from_data(unique_columns_and_values_from_data, concept_column)
             self.codelist_maps[codelist_path] = pd.concat([codelist_from_map, codelist_from_dsd, codelist_from_data])
 
+
+    def write_csv_maps(self):
         self.write_concept_map()
         self.write_codelist_maps()
 
+
+    def write_excel_maps(self):
+        path = os.path.join(self.map_folder_path, '_Concepts.xlsx')
+        with pd.ExcelWriter(path) as writer:
+            self.concept_map.to_excel(writer, sheet_name='_Concepts', index=False)
+            for codelist_path in self.codelist_maps:
+                sheet_name = os.path.basename(codelist_path).replace('.csv', '')
+                if len(sheet_name) > 30:
+                    sheet_name = sheet_name[0:30]
+                self.codelist_maps[codelist_path].to_excel(writer, sheet_name=sheet_name, index=False)
+
+
     def write_concept_map(self):
-        path = os.path.join(self.map_folder_path, 'concepts.csv')
+        path = os.path.join(self.map_folder_path, '_Concepts.csv')
         self.concept_map.to_csv(path, index=False)
 
 
