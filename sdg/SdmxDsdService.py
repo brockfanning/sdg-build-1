@@ -60,38 +60,45 @@ class SdmxDsdService(OutputBase):
         self.dsd_path = dsd_path
         self.map_folder_exists = os.path.exists(map_folder_path)
         self.map_folder_path = map_folder_path
-        self.map = self.get_map()
-
         if not self.map_folder_exists:
             os.makedirs(self.map_folder_path, exist_ok=True)
 
-
-    def update_files(self):
         if not self.dsd_exists:
             self.dsd = self.parse_xml('https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=all&prettyPrint=true')
         else:
             self.dsd = self.parse_xml(self.dsd_path)
 
-        #print(self.dsd_contains_codelist('CL_SERIES'))
-        concepts_from_data = self.get_concepts_from_data()
-        concepts_not_in_map = []
-        for concept in concepts_from_data:
-            if not self.concept_is_mapped(concept['CSV Column']):
-                concepts_not_in_map.append(concept)
+        unique_columns_and_values_from_data = self.get_unique_columns_and_values_from_data()
+        concepts_from_data = self.get_concepts_from_data(unique_columns_and_values_from_data)
+        concepts_from_map = self.get_concepts_from_map()
+        concepts_from_dsd = self.get_concepts_from_dsd()
+        self.concept_map = pd.concat([concepts_from_map, concepts_from_dsd, concepts_from_data])
+        self.codelist_maps = {}
+        for index, concept in self.concept_map.iterrows():
+            # 1. Get everything already in the a map file, if any.
+            concept_id = concept['Concept Name']
+            concept_column = concept['CSV Column']
+            codelist_path = os.path.join(map_folder_path, concept_id) + '.csv'
+            codelist_from_map = self.get_codelist_from_map(codelist_path)
+            codelist_from_dsd = self.get_codelist_from_dsd(concept_id)
+            codelist_from_data = self.get_codelist_from_data(unique_columns_and_values_from_data, concept_column)
+            self.codelist_maps[codelist_path] = pd.concat([codelist_from_map, codelist_from_dsd, codelist_from_data])
 
-        if len(concepts_not_in_map) > 0:
-            missing_concepts = self.get_dataframe_for_concepts(concepts_not_in_map)
-            self.map = pd.concat([self.map, missing_concepts])
-            self.write_map()
+        self.write_concept_map()
+        self.write_codelist_maps()
 
-
-    def write_map(self):
+    def write_concept_map(self):
         path = os.path.join(self.map_folder_path, 'concepts.csv')
-        self.map.to_csv(path, index=False)
+        self.concept_map.to_csv(path, index=False)
+
+
+    def write_codelist_maps(self):
+        for codelist_path in self.codelist_maps:
+            self.codelist_maps[codelist_path].to_csv(codelist_path, index=False)
 
 
     def concept_is_mapped(self, column_name):
-        return column_name in self.map['CSV Column']
+        return column_name in self.concept_map['CSV Column'].values
 
 
     def parse_xml(self, location, strip_namespaces=True):
@@ -134,13 +141,21 @@ class SdmxDsdService(OutputBase):
         return data
 
 
-    def get_map(self):
+    def get_concepts_from_map(self):
         if not self.map_folder_exists:
             return self.get_dataframe_for_concepts()
         map_path = os.path.join(self.map_folder_path, 'concepts.csv')
         if not os.path.exists(map_path):
             return self.get_dataframe_for_concepts()
         return pd.read_csv(map_path)
+
+
+    def get_codelist_from_map(self, codelist_path):
+        if not self.map_folder_exists:
+            return self.get_dataframe_for_codelist()
+        if not os.path.exists(codelist_path):
+            return self.get_dataframe_for_codelist()
+        return pd.read_csv(codelist_path)
 
 
     def get_code_mappings(self, codelist):
@@ -173,23 +188,87 @@ class SdmxDsdService(OutputBase):
         return [match.attrib['id'] for match in matches]
 
 
-    def get_concepts_from_data(self):
-        # Get all concepts in the data.
-        concepts = {}
+    def get_concepts_from_dsd(self):
+        # Get all concepts in the DSD.
+        xpath = ".//DimensionList/Dimension"
+        matches = self.dsd.findall(xpath)
+        concepts = [self.get_concept_from_element(match) for match in matches]
+        return pd.DataFrame(concepts)
+
+
+    def get_codelist_from_dsd(self, concept_id):
+        xpath = ".//DimensionList/Dimension[@id='{}']"
+        dimension = self.dsd.find(xpath.format(concept_id))
+        if dimension is None:
+            return self.get_dataframe_for_codelist()
+        ref = dimension.find(".//Ref[@package='codelist']")
+        codelist_id = ref.attrib['id']
+        xpath = ".//Codelists/Codelist[@id='{}']/Code"
+        elements = self.dsd.findall(xpath.format(codelist_id))
+        codes = [self.get_code_from_element(element) for element in elements]
+        return self.get_dataframe_for_codelist(codes)
+
+
+    def get_concept_from_element(self, element):
+        concept = {}
+        concept['CSV Column'] = ''
+        concept['Concept Name'] = element.attrib['id']
+        concept['Role'] = element.tag
+        ref = element.find(".//Ref[@package='codelist']")
+        if ref is not None:
+            concept['Type'] = 'Code'
+            concept['Code List'] = ref.attrib['id']
+            concept['Code List Maintenance Agency'] = ref.attrib['agencyID']
+            concept['Code List version'] = ref.attrib['version']
+        else:
+            concept['Type'] = ''
+            concept['Code List'] = ''
+            concept['Code List Maintenance Agency'] = ''
+            concept['Code List version'] = ''
+        return concept
+
+
+    def get_code_from_element(self, element):
+        code = {}
+        code['CSV Value'] = ''
+        code['Code'] = element.attrib['id']
+        code['Description'] = element.find("./Description").text
+        return code
+
+
+    def get_unique_columns_and_values_from_data(self):
+        columns_and_values = {}
         for indicator_id in self.get_indicator_ids():
             indicator = self.get_indicator_by_id(indicator_id)
             columns = list(indicator.data.columns)
             for column in columns:
                 if not self.is_column_a_concept_in_global_dsd(column):
-                    concepts[column] = self.get_concept_from_column(column)
-        return concepts.values()
+                    if column not in columns_and_values:
+                        columns_and_values[column] = {}
+                    for value in indicator.data[column].dropna().unique():
+                        columns_and_values[column][value] = True
+        return columns_and_values
 
 
-    #def get_concept_from_dsd(self, concept_id):
+    def get_concepts_from_data(self, columns_and_values):
+        concepts = {}
+        for column in columns_and_values:
+            concepts[column] = self.get_concept_from_column(column)
+        return pd.DataFrame(concepts.values())
+
+
+    def get_codelist_from_data(self, columns_and_values, column):
+        if column == '' or column not in columns_and_values:
+            return self.get_dataframe_for_codelist()
+        values = columns_and_values[column].keys()
+        codes = [self.get_code_from_value(value) for value in values]
+        return self.get_dataframe_for_codelist(codes)
+
+
     def get_concept_from_column(self, column_name):
         return {
             'CSV Column': column_name,
-            'Concept Name': '',
+            'Concept Name': self.generate_placeholder_id(column_name),
             'Role': 'Dimension',
             'Type': 'Code',
             'Code List': '',
@@ -199,15 +278,36 @@ class SdmxDsdService(OutputBase):
         }
 
 
+    def get_code_from_value(self, value):
+        return {
+            'CSV Value': value,
+            'Code': self.generate_placeholder_id(value),
+            'Description': value,
+        }
+
+
     def get_dataframe_for_concepts(self, data=None):
         columns = self.get_concept_from_column('').keys()
         return pd.DataFrame(data=data, columns=columns)
 
 
+    def get_dataframe_for_codelist(self, data=None):
+        columns = self.get_code_from_value('').keys()
+        return pd.DataFrame(data=data, columns=columns)
+
+
+    def generate_placeholder_id(self, name):
+        return name.upper().replace(' ', '_').replace('(', '').replace(')', '')
+
+
     def is_column_a_concept_in_global_dsd(self, column_name):
         return column_name in [
-            'Value',
+            'Year',
             'Units',
+            'Series',
+            'Value',
+            'GeoCode',
             'Observation status',
-            'Unit multiplier'
+            'Unit multiplier',
+            'Unit measure'
         ]
