@@ -369,7 +369,7 @@ class SdmxDsdService(OutputBase):
         if len(parts) > 3:
             series = parts[3]
             if len(series) == 1:
-                series = '0' + suffix
+                series = '0' + series
 
         code = prefix + goal + target + indicator
         if series is not None:
