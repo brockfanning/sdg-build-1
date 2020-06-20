@@ -32,7 +32,7 @@ class SdmxDsdService(OutputBase):
     """
 
 
-    def __init__(self, inputs, map_folder_path, dsd_path, translations=None):
+    def __init__(self, inputs, map_folder_path, dsd_path, translations=None, country_code='', languages=None):
         """Constructor for SdmxDsdService.
 
         Parameters
@@ -51,11 +51,14 @@ class SdmxDsdService(OutputBase):
         """
         if translations is None:
             translations = []
+        if languages is None:
+            languages = ['en']
 
         # This is not technically an "output", but it needs much the same as an
         # output, so it extends from OutputBase.
         OutputBase.__init__(self, inputs, None, None, translations)
 
+        self.country_code = country_code
         self.dsd_exists = os.path.exists(dsd_path)
         self.dsd_path = dsd_path
         self.map_folder_exists = os.path.exists(map_folder_path)
@@ -67,6 +70,12 @@ class SdmxDsdService(OutputBase):
             self.dsd = self.parse_xml('https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=all&prettyPrint=true')
         else:
             self.dsd = self.parse_xml(self.dsd_path)
+
+        self.languages = languages
+
+        # For our purposes here, we need to add the Series as a disaggregation
+        # column.
+        self.add_series_as_disaggregation_column()
 
         unique_columns_and_values_from_data = self.get_unique_columns_and_values_from_data()
         concepts_from_data = self.get_concepts_from_data(unique_columns_and_values_from_data)
@@ -83,6 +92,13 @@ class SdmxDsdService(OutputBase):
             codelist_from_dsd = self.get_codelist_from_dsd(concept_id)
             codelist_from_data = self.get_codelist_from_data(unique_columns_and_values_from_data, concept_column)
             self.codelist_maps[codelist_path] = pd.concat([codelist_from_map, codelist_from_dsd, codelist_from_data])
+
+
+    def add_series_as_disaggregation_column(self):
+        for indicator_id in self.get_indicator_ids():
+            indicator = self.get_indicator_by_id(indicator_id)
+            if 'Series' not in indicator.data.columns:
+                indicator.data['Series'] = indicator_id
 
 
     def write_csv_maps(self):
@@ -275,7 +291,7 @@ class SdmxDsdService(OutputBase):
         if column == '' or column not in columns_and_values:
             return self.get_dataframe_for_codelist()
         values = columns_and_values[column].keys()
-        codes = [self.get_code_from_value(value) for value in values]
+        codes = [self.get_code_from_value(value, column) for value in values]
         return self.get_dataframe_for_codelist(codes)
 
 
@@ -292,12 +308,20 @@ class SdmxDsdService(OutputBase):
         }
 
 
-    def get_code_from_value(self, value):
-        return {
-            'CSV Value': value,
-            'Code': self.generate_placeholder_id(value),
-            'Description': value,
-        }
+    def get_code_from_value(self, value, column=None):
+        if column == 'Series':
+            indicator = self.get_indicator_by_id(value)
+            return {
+                'CSV Value': value,
+                'Code': self.generate_placeholder_id(value, column),
+                'Description': self.translation_helper.translate(indicator.get_name(), self.languages[0]),
+            }
+        else:
+            return {
+                'CSV Value': value,
+                'Code': self.generate_placeholder_id(value, column),
+                'Description': value,
+            }
 
 
     def get_dataframe_for_concepts(self, data=None):
@@ -310,18 +334,45 @@ class SdmxDsdService(OutputBase):
         return pd.DataFrame(data=data, columns=columns)
 
 
-    def generate_placeholder_id(self, name):
-        return name.upper().replace(' ', '_').replace('(', '').replace(')', '')
+    def generate_placeholder_id(self, name, column=None):
+        if column is not None and column == 'Series':
+            return self.get_series_code_from_indicator_id(name)
+        return '_L_' + name.upper().replace(' ', '_').replace('(', '').replace(')', '')
 
 
     def is_column_a_concept_in_global_dsd(self, column_name):
         return column_name in [
             'Year',
             'Units',
-            'Series',
+            #'Series',
             'Value',
             'GeoCode',
             'Observation status',
             'Unit multiplier',
             'Unit measure'
         ]
+
+
+    def get_series_code_from_indicator_id(self, indicator_id):
+        parts = indicator_id.split('-')
+        prefix = '_L_' + self.country_code + '_'
+        goal = parts[0]
+        if len(goal) == 1:
+            goal = '0' + goal
+        target = parts[1]
+        if len(target) == 1:
+            target = '0' + target
+        indicator = parts[2]
+        if len(indicator) == 1:
+            indicator = '0' + indicator
+        series = None
+        if len(parts) > 3:
+            series = parts[3]
+            if len(series) == 1:
+                series = '0' + suffix
+
+        code = prefix + goal + target + indicator
+        if series is not None:
+            code = code + '_' + series
+
+        return code
