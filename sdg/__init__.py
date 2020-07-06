@@ -20,6 +20,8 @@ from .Indicator import Indicator
 from .IndicatorDownloadService import IndicatorDownloadService
 from .IndicatorExportService import IndicatorExportService
 from .IndicatorOptions import IndicatorOptions
+from .SdmxDsdService import SdmxDsdService
+from .SdmxDsdMappingService import SdmxDsdMappingService
 from .Series import Series
 from .build import build_data
 from .check_csv import check_all_csv

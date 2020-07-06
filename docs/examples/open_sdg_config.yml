@@ -127,3 +127,9 @@ indicator_downloads:
     output_folder: data-csv
     # The "indicator_id_pattern" is optional, default below:
     indicator_id_pattern: indicator_(.*)
+
+# SDMX Mapping Tool
+# -----------------
+# This toggles whether or not to generate an Excel file that is useful in
+# preparing to convert Open SDG data (CSV files) to SDMX.
+create_smdx_mapping_tool: true

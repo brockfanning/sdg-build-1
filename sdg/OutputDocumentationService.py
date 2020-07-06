@@ -14,7 +14,8 @@ class OutputDocumentationService:
 
 
     def __init__(self, outputs, folder='_site', branding='Build docs',
-                 languages=None, intro='', translations=None, indicator_url=None):
+                 languages=None, intro='', translations=None, indicator_url=None,
+                 create_sdmx_mapping_tool=False):
         """Constructor for the OutputDocumentationService class.
 
         Parameters
@@ -42,6 +43,8 @@ class OutputDocumentationService:
             the "[id]" will be replaced with the indicator id (dash-delimited).
             For example, "https://example.com/[id].html" will be replaced with
             "https://example.com/4-1-1.html".
+        create_sdmx_mapping_tool : boolean
+            Whether or not to generate an Excel file for SDMX mapping help.
         """
         self.outputs = outputs
         self.folder = folder
@@ -54,6 +57,7 @@ class OutputDocumentationService:
             self.translation_helper = sdg.translations.TranslationHelper(translations)
         else:
             self.translation_helper = None
+        self.create_sdmx_mapping_tool = create_sdmx_mapping_tool
         self.disaggregation_report_service = sdg.DisaggregationReportService(
             self.outputs,
             languages = self.languages,
@@ -83,6 +87,7 @@ class OutputDocumentationService:
 
         self.write_index(pages)
         self.write_disaggregation_report()
+        self.write_sdmx_mapping_tool()
 
 
     def create_filename(self, title):
@@ -159,6 +164,20 @@ class OutputDocumentationService:
         card_number += 1
         if card_number % 3 == 0:
             html += row_end
+
+        # Add the SDMX mapping tool.
+        if self.create_sdmx_mapping_tool:
+            if card_number % 3 == 0:
+                html += row_start
+            html += self.get_index_card_template().format(
+                title='SDMX Mapping Tool',
+                description='This Excel tool helps to prepare Open SDG data for SDMX output.',
+                destination='sdg-mapping-tool.xlsx',
+                call_to_action='Download tool'
+            )
+            card_number += 1
+            if card_number % 3 == 0:
+                html += row_end
 
         if card_number % 3 != 0:
             html += row_end
@@ -244,6 +263,11 @@ class OutputDocumentationService:
             table=table
         ))
         self.write_page(filename, html)
+
+
+    def write_sdmx_mapping_tool(self):
+        service = sdg.SdmxDsdMappingService(self.disaggregation_report_service)
+        service.create_tool()
 
 
     def get_csv_download(self, df, filename):

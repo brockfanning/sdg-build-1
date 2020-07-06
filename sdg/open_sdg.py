@@ -43,7 +43,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
                    reporting_status_extra_fields=None, config='open_sdg_config.yml',
                    inputs=None, alter_data=None, alter_meta=None, indicator_options=None,
                    docs_branding='Build docs', docs_intro='', docs_indicator_url=None,
-                   docs_subfolder=None, indicator_downloads=None):
+                   docs_subfolder=None, indicator_downloads=None, create_sdmx_mapping_tool=False):
     """Read each input file and edge file and write out json.
 
     Args:
@@ -69,6 +69,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
         docs_subfolder: string. A subfolder in which to put the documentation pages
         indicator_downloads: list. A list of dicts describing calls to the
             write_downloads() method of IndicatorDownloadService
+        create_sdmx_mapping_tool: boolean.
 
     Returns:
         Boolean status of file writes
@@ -100,6 +101,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
         'docs_subfolder': docs_subfolder,
         'indicator_options': indicator_options,
         'indicator_downloads': indicator_downloads,
+        'create_sdmx_mapping_tool': create_sdmx_mapping_tool,
     }
     # Allow for a config file to update these.
     options = open_sdg_config(config, defaults)
@@ -139,6 +141,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
         languages=options['languages'],
         translations=options['translations'],
         indicator_url=options['docs_indicator_url'],
+        create_sdmx_mapping_tool=options['create_sdmx_mapping_tool'],
     )
     documentation_service.generate_documentation()
 
