@@ -3,6 +3,7 @@ from sdg.DisaggregationReportService import DisaggregationReportService
 import pandas as pd
 from xlsxwriter.utility import xl_range_abs
 from xlsxwriter.utility import xl_rowcol_to_cell
+from slugify import slugify
 
 class SdmxDsdMappingService():
 
@@ -70,10 +71,10 @@ class SdmxDsdMappingService():
 
 
     def get_disaggregation_sheet_name(self, sheet_name):
-        sheet_name = sheet_name.lower()
-        if sheet_name in self.sheet_names:
-            sheet_name = sheet_name + '_'
-        if len(sheet_name) > 25:
-            sheet_name = sheet_name[0:25]
-        self.sheet_names.append(sheet_name)
-        return sheet_name
+        slug = slugify(sheet_name)
+        if slug in self.sheet_names:
+            slug = slug + '_'
+        if len(slug) > 25:
+            slug = slug[0:25]
+        self.sheet_names.append(slug)
+        return slug
