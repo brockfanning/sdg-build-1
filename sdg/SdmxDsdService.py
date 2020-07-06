@@ -99,3 +99,18 @@ class SdmxDsdService():
             return name.text
         else:
             return ''
+
+
+    def get_codes_by_attribute_id(self, attribute_id):
+        attribute = self.get_attribute_by_id(attribute_id)
+        if attribute is None:
+            return []
+        ref = attribute.find(".//Ref[@package='codelist']")
+        codelist_id = ref.attrib['id']
+        xpath = ".//Codelists/Codelist[@id='{}']/Code"
+        return self.dsd.findall(xpath.format(codelist_id))
+
+
+    def get_attribute_by_id(self, attribute_id):
+        xpath = ".//AttributeList/Attribute[@id='{}']"
+        return self.dsd.find(xpath.format(attribute_id))
