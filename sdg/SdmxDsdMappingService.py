@@ -68,7 +68,44 @@ class SdmxDsdMappingService():
         # Widen the columns a bit.
         codes_sheet.set_column('A:AE', 10)
 
+        # Add "[REMOVE]" as another dimension and bump the number of dimensions.
+        num_dimensions = len(dimension_ids) + 1
+        codes_sheet.write(num_dimensions, 0, '[REMOVE]')
+        dimensions_range = xl_range_abs(2, 0, num_dimensions + 2, 0)
+        workbook.define_name('dimensions', 'CODES!' + dimensions_range)
 
+        # Write the UNITS sheet.
+        units_sheet = workbook.add_worksheet('UNITS')
+        units_sheet.merge_range('A1:P1', 'Units of measurement', merge_format)
+        units_sheet.write(1, 0, 'UNIT_MEASURE', header_format)
+        units_sheet.write(1, 1, 'Name', header_format)
+
+        unit_codes = sdmx_service.get_codes_by_attribute_id('UNIT_MEASURE')
+        for index, code in enumerate(unit_codes):
+            code_id = self.sdmx_dsd_service.get_code_id(code)
+            code_name = self.sdmx_dsd_service.get_code_name(code, language=self.language)
+            units_sheet.write(2 + index, 0, code_id)
+            units_sheet.write(2 + index, 1, code_name)
+
+        num_units = len(unit_codes) + 1
+        units_sheet.write(num_units + 1, 0, '[REMOVE]')
+        units_sheet.write(num_units + 1, 1, '[REMOVE]')
+        units_range = xl_range_abs(2, 1, num_units + 2, 1)
+        workbook.define_name('units', 'UNITS!' + units_range)
+
+        units_sheet.write(1, 3, 'Mapped from', header_format)
+        units_sheet.write(1, 4, 'Mapped to', header_format)
+        units_df = disagg_service.get_units_dataframe()
+        for index, unit_row in units_df.iterrows():
+            units_sheet.write(index + 2, 3, unit_row['Unit'])
+            units_sheet.data_validation(index + 2, 4, index + 2, 4, {
+                'validate': 'list',
+                'source': 'units',
+            })
+        # Widen the columns a bit.
+        units_sheet.set_column('A:E', 20)
+
+        # Write the disaggregation sheets.
         sorted_disaggregations = list(store.keys())
         sorted_disaggregations.sort()
         for disaggregation in sorted_disaggregations:
