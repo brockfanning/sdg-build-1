@@ -6,4 +6,5 @@ jsonschema
 requests
 humanize
 unicode-slugify
+XlsxWriter
 git+git://github.com/dougmet/yamlmd

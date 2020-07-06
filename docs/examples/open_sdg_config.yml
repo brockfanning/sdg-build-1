@@ -115,3 +115,9 @@ docs_intro: This is a list of examples of endpoints and output that are
   available on this service. Click each of the links below for more information
   on the available output.
 docs_indicator_url: https://my-github-org/my-site-repository/[id]
+
+# SDMX Mapping Tool
+# -----------------
+# This toggles whether or not to generate an Excel file that is useful in
+# preparing to convert Open SDG data (CSV files) to SDMX.
+create_smdx_mapping_tool: true
