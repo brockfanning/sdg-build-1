@@ -34,6 +34,11 @@ class SdmxDsdService():
             for _, el in it:
                 if '}' in el.tag:
                     el.tag = el.tag.split('}', 1)[1]
+                for at in list(el.attrib.keys()):
+                    if '}' in at:
+                        newat = at.split('}', 1)[1]
+                        el.attrib[newat] = el.attrib[at]
+                        del el.attrib[at]
         return it.root
 
 
@@ -57,28 +62,40 @@ class SdmxDsdService():
         return data
 
 
-    def get_dimension_code_pairs(self):
-        pairs = []
-        for dimension in self.get_dimension_ids():
-            codes = self.get_code_ids_by_dimension(dimension)
-            dimension_code_pairs = [(dimension, code) for code in codes]
-            pairs.extend(dimension_code_pairs)
-        return pairs
-
-
     def get_dimension_ids(self):
+        return [dimension.attrib['id'] for dimension in self.get_dimensions()]
+
+
+    def get_dimensions(self):
         xpath = ".//DimensionList/Dimension"
-        matches = self.dsd.findall(xpath)
-        return [match.attrib['id'] for match in matches]
+        return self.dsd.findall(xpath)
 
 
-    def get_code_ids_by_dimension(self, dimension_id):
+    def get_dimension_by_id(self, dimension_id):
         xpath = ".//DimensionList/Dimension[@id='{}']"
-        dimension = self.dsd.find(xpath.format(dimension_id))
+        return self.dsd.find(xpath.format(dimension_id))
+
+
+    def get_codes_by_dimension_id(self, dimension_id):
+        dimension = self.get_dimension_by_id(dimension_id)
         if dimension is None:
             return []
         ref = dimension.find(".//Ref[@package='codelist']")
         codelist_id = ref.attrib['id']
         xpath = ".//Codelists/Codelist[@id='{}']/Code"
-        matches = self.dsd.findall(xpath.format(codelist_id))
-        return [match.attrib['id'] for match in matches]
+        return self.dsd.findall(xpath.format(codelist_id))
+
+
+    def get_code_id(self, code):
+        return code.attrib['id']
+
+
+    def get_code_name(self, code, language=None):
+        xpath = "./Name"
+        if language is not None:
+            xpath = "./Name[@lang='{}']".format(language)
+        name = code.find(xpath)
+        if name is not None:
+            return name.text
+        else:
+            return ''
