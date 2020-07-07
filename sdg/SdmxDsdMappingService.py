@@ -8,11 +8,12 @@ import os
 
 class SdmxDsdMappingService():
 
-    def __init__(self, disaggregation_report_service, folder='_site', max_codes=10000):
+    def __init__(self, disaggregation_report_service, folder='_site', max_codes=10000, language='en'):
         self.sdmx_dsd_service = SdmxDsdService()
         self.disaggregation_report_service = disaggregation_report_service
         self.folder = folder
         self.max_codes = max_codes
+        self.language = language
         self.sheet_names = []
 
     def create_tool(self):
@@ -20,7 +21,6 @@ class SdmxDsdMappingService():
         sdmx_service = self.sdmx_dsd_service
         store = disagg_service.get_disaggregation_store()
         dimension_ids = sdmx_service.get_dimension_ids()
-        language = self.disaggregation_report_service.get_default_language()
 
         excel_path = os.path.join(self.folder, 'sdmx-mapping-tool.xlsx')
         writer = pd.ExcelWriter(excel_path, engine='xlsxwriter')
@@ -56,7 +56,7 @@ class SdmxDsdMappingService():
             codes = sdmx_service.get_codes_by_dimension_id(dimension_id)
             for row, code in enumerate(codes, start=2):
                 code_id = self.sdmx_dsd_service.get_code_id(code)
-                code_name = self.sdmx_dsd_service.get_code_name(code, language=language)
+                code_name = self.sdmx_dsd_service.get_code_name(code, language=self.language)
                 global_sheet.write(row, column, code_id, global_format)
                 global_sheet.write(row, column + 1, code_name, global_format)
             codes_range = xl_range_abs(2, column + 1, self.max_codes, column + 1)
