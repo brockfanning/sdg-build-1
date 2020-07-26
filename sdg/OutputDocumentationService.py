@@ -224,7 +224,7 @@ class OutputDocumentationService:
             html += self.get_index_card_template().format(
                 title='SDMX Mapping Tool',
                 description='This Excel tool helps to prepare Open SDG data for SDMX output.',
-                destination='sdg-mapping-tool.xlsx',
+                destination='sdmx-mapping-tool.xlsx',
                 call_to_action='Download tool'
             )
             card_number += 1
