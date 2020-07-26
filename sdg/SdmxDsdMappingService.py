@@ -62,7 +62,8 @@ class SdmxDsdMappingService():
             codes_range = xl_range_abs(2, column + 1, self.max_codes, column + 1)
             workbook.define_name(dimension_id, 'CODES!' + codes_range)
 
-        dimensions_range = xl_range_abs(2, 0, len(dimension_ids) + 1, 0)
+        global_sheet.write(len(dimension_ids) + 2, 0, '[REMOVE]')
+        dimensions_range = xl_range_abs(2, 0, len(dimension_ids) + 2, 0)
         workbook.define_name('dimensions', 'CODES!' + dimensions_range)
         global_sheet.set_column('A:AE', 10)
 
@@ -72,7 +73,7 @@ class SdmxDsdMappingService():
             info = store[disaggregation]
             disaggregation_df = disagg_service.get_disaggregation_dataframe(info)
             del disaggregation_df['Number of indicators']
-            del disaggregation_df['Number of instances']
+            del disaggregation_df['Disaggregation combinations using this value']
             disaggregation_df = disagg_service.remove_links_from_dataframe(disaggregation_df)
             disaggregation_sheet_name = self.get_disaggregation_sheet_name(disaggregation)
             disaggregation_df.to_excel(writer, startrow=1, index=False, sheet_name=disaggregation_sheet_name)
