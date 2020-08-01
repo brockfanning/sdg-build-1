@@ -8,7 +8,7 @@ import os
 
 class SdmxDsdMappingService():
 
-    def __init__(self, disaggregation_report_service, folder='_site', max_codes=10000, language='en'):
+    def __init__(self, disaggregation_report_service, folder='_site', max_codes=1000, language='en'):
         self.sdmx_dsd_service = SdmxDsdService()
         self.disaggregation_report_service = disaggregation_report_service
         self.folder = folder
