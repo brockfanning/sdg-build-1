@@ -1,6 +1,7 @@
 from sdg.SdmxDsdService import SdmxDsdService
 from sdg.DisaggregationReportService import DisaggregationReportService
 import pandas as pd
+import xlsxwriter
 from xlsxwriter.utility import xl_range_abs
 from xlsxwriter.utility import xl_rowcol_to_cell
 from slugify import slugify
@@ -23,8 +24,10 @@ class SdmxDsdMappingService():
         dimension_ids = sdmx_service.get_dimension_ids()
 
         excel_path = os.path.join(self.folder, 'sdmx-mapping-tool.xlsx')
-        writer = pd.ExcelWriter(excel_path, engine='xlsxwriter')
-        workbook = writer.book
+        workbook = xlsxwriter.Workbook(excel_path)
+
+        #writer = pd.ExcelWriter(excel_path, engine='xlsxwriter')
+        #workbook = writer.book
         header_format = workbook.add_format({
             'bold': True
         })
@@ -35,37 +38,36 @@ class SdmxDsdMappingService():
             'valign': 'vcenter',
             'fg_color': 'yellow'
         })
-        global_format = workbook.add_format({
-            'fg_color': 'yellow'
-        })
-        global_header_format = workbook.add_format({
-            'bold': True,
-            'fg_color': 'yellow'
-        })
 
-        global_sheet = workbook.add_worksheet('CODES')
-        global_sheet.merge_range('A1:P1', 'Codes - do not change yellow cells - add national codes as needed', merge_format)
-        global_sheet.write(1, 0, 'Dimensions', global_header_format)
-        dimension_header_row = 1
-        dimension_list_column = 0
-        for index, dimension_id in enumerate(dimension_ids, start=1):
-            global_sheet.write(index + 1, 0, dimension_id, global_format)
-            column = (index * 2) - 1
-            global_sheet.write(1, column, dimension_id, global_header_format)
-            global_sheet.write(1, column + 1, 'Name', global_header_format)
+        # Write the CODES sheet.
+        codes_sheet = workbook.add_worksheet('CODES')
+        codes_sheet.merge_range('A1:P1', 'Codes - add national codes as needed', merge_format)
+        codes_sheet.write(1, 0, 'Dimensions', header_format)
+        for index, dimension_id in enumerate(dimension_ids):
+            # Write the dimensions (plural) column.
+            codes_sheet.write(2 + index, 0, dimension_id)
+            # Write the dimension (singular) columns.
+            column = ((index + 1) * 2) - 1
+            codes_sheet.write(1, column, dimension_id, header_format)
+            codes_sheet.write(1, column + 1, 'Name', header_format)
             codes = sdmx_service.get_codes_by_dimension_id(dimension_id)
             for row, code in enumerate(codes, start=2):
                 code_id = self.sdmx_dsd_service.get_code_id(code)
                 code_name = self.sdmx_dsd_service.get_code_name(code, language=self.language)
-                global_sheet.write(row, column, code_id, global_format)
-                global_sheet.write(row, column + 1, code_name, global_format)
+                codes_sheet.write(row, column, code_id)
+                codes_sheet.write(row, column + 1, code_name)
             codes_range = xl_range_abs(2, column + 1, self.max_codes, column + 1)
             workbook.define_name(dimension_id, 'CODES!' + codes_range)
 
-        global_sheet.write(len(dimension_ids) + 2, 0, '[REMOVE]')
-        dimensions_range = xl_range_abs(2, 0, len(dimension_ids) + 2, 0)
+        # Add "[REMOVE]" as another dimension and bump the number of dimensions.
+        num_dimensions = len(dimension_ids) + 1
+        codes_sheet.write(num_dimensions, 0, '[REMOVE]')
+        dimensions_range = xl_range_abs(2, 0, num_dimensions + 2, 0)
         workbook.define_name('dimensions', 'CODES!' + dimensions_range)
-        global_sheet.set_column('A:AE', 10)
+
+        # Widen the columns a bit.
+        codes_sheet.set_column('A:AE', 10)
+
 
         sorted_disaggregations = list(store.keys())
         sorted_disaggregations.sort()
@@ -76,37 +78,70 @@ class SdmxDsdMappingService():
             del disaggregation_df['Disaggregation combinations using this value']
             disaggregation_df = disagg_service.remove_links_from_dataframe(disaggregation_df)
             disaggregation_sheet_name = self.get_disaggregation_sheet_name(disaggregation)
-            disaggregation_df.to_excel(writer, startrow=1, index=False, sheet_name=disaggregation_sheet_name)
+            disaggregation_sheet = workbook.add_worksheet(disaggregation_sheet_name)
 
-            disaggregation_sheet = writer.sheets[disaggregation_sheet_name]
             disaggregation_map_column = len(disaggregation_df.columns)
             disaggregation_header_range = xl_range_abs(0, 0, 0, disaggregation_map_column + 3)
             disaggregation_sheet.merge_range(disaggregation_header_range, disaggregation, merge_format)
-            disaggregation_sheet.write(1, disaggregation_map_column, 'Dimension 1', header_format)
-            disaggregation_sheet.data_validation(2, disaggregation_map_column, self.max_codes, disaggregation_map_column, {
-                'validate': 'list',
-                'source': 'dimensions',
-            })
-            disaggregation_sheet.write(1, disaggregation_map_column + 1, 'Code 1', header_format)
-            disaggregation_sheet.data_validation(2, disaggregation_map_column + 1, self.max_codes, disaggregation_map_column + 1, {
-                'validate': 'list',
-                'source': 'INDIRECT(' + xl_rowcol_to_cell(2, disaggregation_map_column) + ')',
-            })
-            disaggregation_sheet.write(1, disaggregation_map_column + 2, 'Dimension 2 (optional)', header_format)
-            disaggregation_sheet.data_validation(2, disaggregation_map_column + 2, self.max_codes, disaggregation_map_column + 2, {
-                'validate': 'list',
-                'source': 'dimensions',
-            })
-            disaggregation_sheet.write(1, disaggregation_map_column + 3, 'Code 2 (optional)', header_format)
-            disaggregation_sheet.data_validation(2, disaggregation_map_column + 3, self.max_codes, disaggregation_map_column + 3, {
-                'validate': 'list',
-                'source': 'INDIRECT(' + xl_rowcol_to_cell(2, disaggregation_map_column + 2) + ')',
-            })
+            row = 1
+            column = 0
+            for header in disaggregation_df.columns:
+                disaggregation_sheet.write(row, column, header, header_format)
+                column += 1
+
+            row = 2
+            for index, value_row in disaggregation_df.iterrows():
+                column = 0
+                for header in disaggregation_df.columns:
+                    disaggregation_sheet.write(row, column, value_row[header])
+                    column += 1
+                row += 1
+
+            row = 1
+            column = disaggregation_map_column
+            disaggregation_sheet.write(row, column, 'Dimension 1', header_format)
+            disaggregation_sheet.write(row, column + 1, 'Code 1', header_format)
+            disaggregation_sheet.write(row, column + 2, 'Dimension 2 (optional)', header_format)
+            disaggregation_sheet.write(row, column + 3, 'Code 2 (optional)', header_format)
+
+            row = 2
+            for index, value_row in disaggregation_df.iterrows():
+
+                dimension_1_cell = xl_rowcol_to_cell(row, column)
+                code_1_cell = xl_rowcol_to_cell(row, column + 1)
+                dimension_2_cell = xl_rowcol_to_cell(row, column + 2)
+                code_2_cell = xl_rowcol_to_cell(row, column + 3)
+
+                disaggregation_sheet.data_validation(row, column, row, column, {
+                    'validate': 'list',
+                    'source': 'dimensions',
+                })
+                disaggregation_sheet.data_validation(row, column + 2, row, column + 2, {
+                    'validate': 'list',
+                    'source': 'dimensions',
+                })
+
+                array_row_1_start = 1000
+                array_row_1_end = 1900
+                array_row_2_start = 2000
+                array_row_2_end = 2900
+                array_column = row - 2
+                disaggregation_sheet.write_array_formula(array_row_1_start, array_column, array_row_1_end, array_column, '{=INDIRECT(' + dimension_1_cell + ')}')
+                disaggregation_sheet.write_array_formula(array_row_2_start, array_column, array_row_2_end, array_column, '{=INDIRECT(' + dimension_2_cell + ')}')
+
+                disaggregation_sheet.data_validation(code_1_cell, {
+                    'validate': 'list',
+                    'source': '=' + xl_range_abs(array_row_1_start, array_column, array_row_1_end, array_column),
+                })
+                disaggregation_sheet.data_validation(code_2_cell, {
+                    'validate': 'list',
+                    'source': '=' + xl_range_abs(array_row_2_start, array_column, array_row_2_end, array_column),
+                })
+                row += 1
             disaggregation_sheet.set_column('A:Z', 30)
-            disaggregation_sheet.set_row(1, 20, global_header_format)
+            disaggregation_sheet.set_row(1, 20, header_format)
 
-
-        writer.save()
+        workbook.close()
 
 
     def get_disaggregation_sheet_name(self, sheet_name):
