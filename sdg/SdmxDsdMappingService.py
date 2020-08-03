@@ -146,9 +146,9 @@ class SdmxDsdMappingService():
 
     def get_disaggregation_sheet_name(self, sheet_name):
         slug = slugify(sheet_name)
-        if slug in self.sheet_names:
+        if len(slug) > 24:
+            slug = slug[0:24]
+        while slug in self.sheet_names:
             slug = slug + '_'
-        if len(slug) > 25:
-            slug = slug[0:25]
         self.sheet_names.append(slug)
         return slug
