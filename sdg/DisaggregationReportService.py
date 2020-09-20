@@ -249,7 +249,7 @@ class DisaggregationReportService:
         df = pd.DataFrame(rows, columns=columns)
         if not df.empty:
             df.sort_values(by=['Unit'], inplace=True)
-        return df
+        return df.dropna()
 
 
     def get_disaggregation_indicator_dataframe(self, info):
