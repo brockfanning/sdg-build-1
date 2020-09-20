@@ -344,6 +344,8 @@ class DisaggregationReportService:
             if 'Units' in df.columns:
                 units = df['Units'].unique()
                 for unit in units:
+                    if pd.isna(unit):
+                        continue
                     if unit not in all_units:
                         all_units.append(unit)
         return all_units
