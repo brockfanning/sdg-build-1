@@ -319,7 +319,7 @@ class OutputDocumentationService:
 
     def write_sdmx_mapping_tool(self):
         service = sdg.SdmxDsdMappingService(self.disaggregation_report_service)
-        service.create_tool()
+        service.create_mapping_tool()
 
 
     def get_csv_download(self, df, filename):
