@@ -104,7 +104,7 @@ class SdmxDsdMappingService():
         workbook.define_name('units', 'UNITS!' + units_range)
 
         existing_units = None if self.existing_map is None else self.parse_unit_sheet()
-        existing_units_dict = dict(zip(existing_units['from'], existing_units['to']))
+        existing_units_dict = None if self.existing_map is None else dict(zip(existing_units['from'], existing_units['to']))
 
         units_sheet.write(1, 3, 'Mapped from', header_format)
         units_sheet.write(1, 4, 'Mapped to', header_format)
