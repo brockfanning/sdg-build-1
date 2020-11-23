@@ -318,7 +318,7 @@ class OutputDocumentationService:
 
 
     def write_sdmx_mapping_tool(self):
-        service = sdg.SdmxDsdMappingService(self.disaggregation_report_service)
+        service = sdg.SdmxDsdMappingService(self.disaggregation_report_service, existing_map='sdmx-mapping-tool.xlsx')
         service.create_mapping_tool()
 
 

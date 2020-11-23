@@ -19,7 +19,7 @@ class SdmxDsdMappingService():
         self.max_codes = max_codes
         self.language = language
         self.sheet_names = []
-        if existing_map is not None:
+        if existing_map is not None and os.path.isfile(existing_map):
             self.existing_map = self.read_mapping(existing_map)
             dsd_path = 'dsd.xml'
             self.create_dsd_from_map(dsd_path=dsd_path)
