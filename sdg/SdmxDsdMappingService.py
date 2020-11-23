@@ -295,6 +295,35 @@ class SdmxDsdMappingService():
                 code_desc_node.attrib['xml:lang'] = 'en'
 
 
+        if self.existing_map is not None:
+            unit_df = self.existing_map['UNITS']
+            unit_df = unit_df[[0, 1]]
+            unit_df.columns = ['code', 'name']
+            unit_df = unit_df.iloc[2:]
+            unit_df = unit_df.dropna()
+            codelist_node = root.find('.//str:Codelist[@id="CL_UNIT_MEASURE"]', namespaces)
+            codelist_urn = codelist_node.attrib['urn']
+            global_codes = [code.attrib['id'] for code in codelist_node.findall('.//str:Code', namespaces)]
+            custom_codes = unit_df
+            custom_codes = custom_codes[~custom_codes['code'].isin(global_codes)]
+            if not custom_codes.empty:
+                made_edits = True
+                codelist_node.attrib['agencyID'] = agency
+                for index, row in custom_codes.iterrows():
+                    custom_code = row['code']
+                    custom_name = row['name']
+                    if custom_name == '[REMOVE]':
+                        continue
+                    code_node = ET.SubElement(codelist_node, 'str:Code')
+                    code_node.attrib['id'] = custom_code
+                    code_node.attrib['urn'] = codelist_urn + '.' + custom_code
+                    code_name_node = ET.SubElement(code_node, 'com:Name')
+                    code_desc_node = ET.SubElement(code_node, 'com:Description')
+                    code_name_node.text = custom_name
+                    code_desc_node.text = custom_name
+                    code_name_node.attrib['xml:lang'] = 'en'
+                    code_desc_node.attrib['xml:lang'] = 'en'
+
         if made_edits:
             header_node = root.find('.//mes:Header', namespaces)
 
