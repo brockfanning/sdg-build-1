@@ -264,7 +264,7 @@ class Indicator:
             special_columns = self.options.get_non_disaggregation_columns() + ['COMPOSITE_BREAKDOWN']
             if text in special_columns:
                 return text
-            return translation_helper.translate(text, language, default_group='data')
+            return translation_helper.translate(text, language, default_group=[text, 'data'])
 
         # Translate the name.
         indicator.set_name(translate_meta(self.name))
