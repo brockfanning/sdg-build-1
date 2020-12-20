@@ -117,6 +117,8 @@ docs_intro: This is a list of examples of endpoints and output that are
 docs_indicator_url: https://my-github-org/my-site-repository/[id]
 docs_extra_disaggregations:
   - Units
+# Whether to provide columns for translations in the disaggregation report.
+docs_translate_disaggregations: true
 
 # Indicator downloads
 # -------------------
