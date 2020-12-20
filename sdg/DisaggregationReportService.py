@@ -231,6 +231,22 @@ class DisaggregationReportService:
         return df
 
 
+    def get_units_dataframe(self):
+        rows = []
+        for unit in self.get_unique_units():
+            row = {
+                'Unit': unit
+            }
+            rows.append(row)
+
+        columns = ['Unit']
+
+        df = pd.DataFrame(rows, columns=columns)
+        if not df.empty:
+            df.sort_values(by=['Unit'], inplace=True)
+        return df.dropna()
+
+
     def get_disaggregation_indicator_dataframe(self, info):
         rows = []
         for indicator_id in info['indicators']:
@@ -314,3 +330,22 @@ class DisaggregationReportService:
 
     def remove_links_from_dataframe(self, df):
         return df.replace('<[^<]+?>', '', regex=True)
+
+
+    def get_unique_units(self):
+        all_units = []
+        indicators = self.get_all_indicators()
+        for indicator_id in indicators:
+            if not indicators[indicator_id].is_statistical():
+                continue
+            if not indicators[indicator_id].is_complete():
+                continue
+            df = indicators[indicator_id].data
+            if 'Units' in df.columns:
+                units = df['Units'].unique()
+                for unit in units:
+                    if pd.isna(unit):
+                        continue
+                    if unit not in all_units:
+                        all_units.append(unit)
+        return all_units
