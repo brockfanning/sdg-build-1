@@ -44,7 +44,8 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
                    inputs=None, alter_data=None, alter_meta=None, indicator_options=None,
                    docs_branding='Build docs', docs_intro='', docs_indicator_url=None,
                    docs_subfolder=None, indicator_downloads=None, docs_baseurl='',
-                   docs_translate_disaggregations=False, create_sdmx_mapping_tool=False):
+                   docs_translate_disaggregations=False, create_sdmx_mapping_tool=False,
+                   docs_extra_disaggregations=None):
     """Read each input file and edge file and write out json.
 
     Args:
@@ -74,6 +75,8 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
         docs_translate_disaggregations: boolean. Whether to provide translated columns
             in the disaggregation report
         create_sdmx_mapping_tool: boolean.
+        docs_extra_disaggregations: list. An optional list of extra columns
+            that would not otherwise be included in the disaggregation report
 
     Returns:
         Boolean status of file writes
@@ -108,6 +111,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
         'indicator_options': indicator_options,
         'indicator_downloads': indicator_downloads,
         'create_sdmx_mapping_tool': create_sdmx_mapping_tool,
+        'docs_extra_disaggrations': docs_extra_disaggregations,
     }
     # Allow for a config file to update these.
     options = open_sdg_config(config, defaults)
@@ -147,6 +151,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
         baseurl=options['docs_baseurl'],
         translate_disaggregations=options['docs_translate_disaggregations'],
         create_sdmx_mapping_tool=options['create_sdmx_mapping_tool'],
+        extra_disaggregations=options['docs_extra_disaggregations'],
     )
     documentation_service.generate_documentation()
 
