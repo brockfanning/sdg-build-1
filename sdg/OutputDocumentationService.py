@@ -16,7 +16,7 @@ class OutputDocumentationService:
     def __init__(self, outputs, folder='_site', branding='Build docs',
                  languages=None, intro='', translations=None, indicator_url=None,
                  subfolder=None, baseurl='', translate_disaggregations=False,
-                 create_sdmx_mapping_tool=False):
+                 create_sdmx_mapping_tool=False, extra_disaggregations=None):
         """Constructor for the OutputDocumentationService class.
 
         Parameters
@@ -54,6 +54,10 @@ class OutputDocumentationService:
             disaggregation report.
         create_sdmx_mapping_tool : boolean
             Whether or not to generate an Excel file for SDMX mapping help.
+        extra_disaggregations : list
+            An optional list of columns to include in the disaggregation report,
+            which would otherwise not be included. Common options are units of
+            measurement and series.
         """
         self.outputs = outputs
         self.folder = self.fix_folder(folder, subfolder)
@@ -73,7 +77,8 @@ class OutputDocumentationService:
             self.outputs,
             languages = self.languages if translate_disaggregations else [],
             translation_helper = self.translation_helper,
-            indicator_url = self.indicator_url
+            indicator_url = self.indicator_url,
+            extra_disaggregations = extra_disaggregations,
         )
 
 
