@@ -35,6 +35,7 @@ class Indicator(Loggable):
         self.set_headline()
         self.set_edges()
         self.translations = {}
+        self.serieses = None
 
 
     def has_name(self):
@@ -363,6 +364,10 @@ class Indicator(Loggable):
         # Safety code for empty dataframes.
         if self.data.empty:
             return []
+        # Cache for efficiency.
+        if self.serieses is not None:
+            return self.serieses
+
         # Assume "disaggregations" are everything except 'Year' and 'Value'.
         aggregating_columns = ['Year', 'Value']
         grouping_columns = [column for column in self.data.columns if column not in aggregating_columns]
@@ -386,4 +391,5 @@ class Indicator(Loggable):
         grouped = grouped.groupby(grouping_columns, as_index=False)[aggregating_columns].agg(lambda x: list(x))
         # Convert to a list of Series objects.
         grouped['series_objects'] = grouped.apply(row_to_series, axis=1)
-        return grouped['series_objects'].tolist()
+        self.serieses = grouped['series_objects'].tolist()
+        return self.serieses
