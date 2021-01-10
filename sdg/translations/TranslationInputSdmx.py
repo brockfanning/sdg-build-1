@@ -47,6 +47,7 @@ class TranslationInputSdmx(TranslationInputBase):
 
 
     def execute(self):
+        TranslationInputBase.execute(self)
         dsd = self.parse_xml(self.source)
 
         dimension_tags = dsd.findall('.//Dimension')
