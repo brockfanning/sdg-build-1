@@ -117,6 +117,7 @@ docs_intro: This is a list of examples of endpoints and output that are
 docs_indicator_url: https://my-github-org/my-site-repository/[id]
 # Whether to provide columns for translations in the disaggregation report.
 docs_translate_disaggregations: true
+# Extra data columns to include in the disaggregation report.
 docs_extra_disaggregations:
   - Units
 
@@ -131,3 +132,10 @@ indicator_downloads:
     output_folder: data-csv
     # The "indicator_id_pattern" is optional, default below:
     indicator_id_pattern: indicator_(.*)
+
+# Indicator export (zip file)
+# ---------------------------
+# This controls the filename of the zipped file of indicator data.
+# The file extension (.zip) is not needed. The defualt, if omitted,
+# is below:
+indicator_export_filename: all_indicators

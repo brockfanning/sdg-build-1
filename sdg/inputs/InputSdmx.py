@@ -17,7 +17,9 @@ class InputSdmx(InputBase):
                  import_names=True,
                  import_codes=False,
                  import_translation_keys=False,
-                 dsd='https://unstats.un.org/sdgs/files/SDG_DSD.xml',
+                 import_series_attributes=True,
+                 import_observation_attributes=True,
+                 dsd='https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=children',
                  indicator_id_xpath=".//Annotation[AnnotationTitle='Indicator']/AnnotationText",
                  indicator_name_xpath=".//Annotation[AnnotationTitle='IndicatorTitle']/AnnotationText"):
         """Constructor for InputSdmx.
@@ -76,6 +78,8 @@ class InputSdmx(InputBase):
         self.indicator_id_map = indicator_id_map
         self.import_names = import_names
         self.import_codes = import_codes
+        self.import_series_attributes = import_series_attributes
+        self.import_observation_attributes = import_observation_attributes
         # Also use deprecated import_translation_keys.
         if not import_codes and import_translation_keys:
             self.import_codes = import_translation_keys

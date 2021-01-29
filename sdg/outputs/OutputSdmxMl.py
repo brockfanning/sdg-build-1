@@ -1,26 +1,22 @@
-"""
-This output assumes the following:
-1. A DSD is already created and available
-2. All columns in the data correspond exactly
-   to dimension IDs.
-3. All values in the columns correspond exactly
-   to codes in those dimensions' codelists.
-"""
-
 import os
 import sdg
 import pandas as pd
 import numpy as np
 import sdmx
+import time
+from slugify import slugify
 from sdmx.model import (
+    SeriesKey,
     Key,
     AttributeValue,
     Observation,
-    DataSet,
-    DataflowDefinition
+    GenericTimeSeriesDataSet,
+    DataflowDefinition,
+    Agency
 )
 from sdmx.message import (
-    DataMessage
+    DataMessage,
+    Header
 )
 from urllib.request import urlretrieve
 from sdg.outputs import OutputBase
@@ -30,9 +26,18 @@ class OutputSdmxMl(OutputBase):
 
 
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
-                 indicator_options=None, dsd='https://unstats.un.org/sdgs/files/SDG_DSD.xml',
-                 default_values=None):
+                 indicator_options=None, dsd='https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=children',
+                 default_values=None, header_id=None, sender_id=None):
         """Constructor for OutputSdmxMl.
+
+        This output assumes the following:
+        1. A DSD is already created and available
+        2. All columns in the data correspond exactly to dimension IDs.
+        3. All values in the columns correspond exactly to codes in those dimensions' codelists.
+
+        Notes on translation:
+        SDMX output does not need to be transated. Hence, this output will always appear in
+        an "sdmx" folder, and will never be translated in a language subfolder.
 
         Parameters
         ----------
@@ -47,8 +52,17 @@ class OutputSdmxMl(OutputBase):
             Since SDMX output is required to have a value for every dimension/attribute
             you may need to specify defaults here. If not specified here, defaults for
             attributes will be '' and defaults for dimensions will be '_T'.
+        header_id : string or None
+            Optional identifying string to put in the "ID" element in the header
+            of the XML. If not specified, it will be "IREF" and a timestamp.
+        sender_id : string or None
+            Optional identifying string to put in the "id" attribut of the "Sender" element
+            in the header of the XML. If not specified, it will be the current version
+            of this library.
         """
         OutputBase.__init__(self, inputs, schema, output_folder, translations, indicator_options)
+        self.header_id = header_id
+        self.sender_id = sender_id
         self.retrieve_dsd(dsd)
         sdmx_folder = os.path.join(output_folder, 'sdmx')
         if not os.path.exists(sdmx_folder):
@@ -72,6 +86,10 @@ class OutputSdmxMl(OutputBase):
         datasets = []
         dfd = DataflowDefinition(id="OPEN_SDG_DFD", structure=self.dsd)
 
+        # SDMX output is language-agnostic. Only the DSD contains language info.
+        if language is not None:
+            language = None
+
         for indicator_id in self.get_indicator_ids():
             indicator = self.get_indicator_by_id(indicator_id).language(language)
             data = indicator.data.copy()
@@ -87,9 +105,29 @@ class OutputSdmxMl(OutputBase):
             if data.empty:
                 continue
 
-            observations = data.apply(self.make_obs, axis=1, indicator=indicator).to_list()
-            dataset = DataSet(structured_by=self.dsd, obs=observations)
-            msg = DataMessage(data=[dataset], dataflow=dfd)
+            serieses = {}
+            for _, row in data.iterrows():
+                series_key = self.dsd.make_key(SeriesKey, self.get_dimension_values(row, indicator))
+                series_key.attrib = self.get_series_attribute_values(row, indicator)
+                attributes = self.get_observation_attribute_values(row, indicator)
+                dimension_key = self.dsd.make_key(Key, values={
+                    'TIME_PERIOD': str(row['TIME_DETAIL']),
+                })
+                observation = Observation(
+                    series_key=series_key,
+                    dimension=dimension_key,
+                    attached_attribute=attributes,
+                    value_for=self.dsd.measures[0],
+                    value=row[self.dsd.measures[0].id],
+                )
+                if series_key not in serieses:
+                    serieses[series_key] = []
+                serieses[series_key].append(observation)
+
+            dataset = GenericTimeSeriesDataSet(structured_by=self.dsd, series=serieses)
+            header = self.create_header()
+            time_period = next(dim for dim in self.dsd.dimensions if dim.id == 'TIME_PERIOD')
+            msg = DataMessage(data=[dataset], dataflow=dfd, header=header, observation_dimension=time_period)
             sdmx_path = os.path.join(self.sdmx_folder, indicator_id + '.xml')
             with open(sdmx_path, 'wb') as f:
                 status = status & f.write(sdmx.to_xml(msg))
@@ -103,21 +141,54 @@ class OutputSdmxMl(OutputBase):
         return status
 
 
+    def create_header(self):
+        timestamp = time.time()
+        header_id = self.header_id
+        if header_id is None:
+            header_id = 'IREF' + str(int(timestamp))
+        else:
+            header_id = slugify(header_id)
+        sender_id = self.sender_id
+        if sender_id is None:
+            sender_id = 'open-sdg_sdg-build@' + slugify(sdg.__version__)
+        else:
+            sender_id = slugify(sender_id)
+
+        return Header(
+            id=header_id,
+            test=True,
+            prepared=time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(timestamp)),
+            sender=Agency(id=sender_id),
+        )
+
+
     def get_dimension_values(self, row, indicator):
         values = {}
         for dimension in self.dsd.dimensions:
+            # Skip the TIME_PERIOD dimension because it is used as the "observation dimension".
+            if dimension.id == 'TIME_PERIOD':
+                continue
             value = row[dimension.id] if dimension.id in row else self.get_dimension_default(dimension.id, indicator)
             if value != '':
                 values[dimension.id] = value
         return values
 
 
-    def get_attribute_values(self, row, indicator):
+    def get_observation_attribute_values(self, row, indicator):
+        return self.get_attribute_values(row, indicator, sdmx.model.PrimaryMeasureRelationship)
+
+
+    def get_series_attribute_values(self, row, indicator):
+        return self.get_attribute_values(row, indicator, sdmx.model.DimensionRelationship)
+
+
+    def get_attribute_values(self, row, indicator, related_to):
         values = {}
         for attribute in self.dsd.attributes:
-            value = row[attribute.id] if attribute.id in row else self.get_attribute_default(attribute.id, indicator)
-            if value != '':
-                values[attribute.id] = AttributeValue(value_for=attribute, value=value)
+            if attribute.related_to is not None and isinstance(attribute.related_to, related_to):
+                value = row[attribute.id] if attribute.id in row else self.get_attribute_default(attribute.id, indicator)
+                if value != '':
+                    values[attribute.id] = AttributeValue(value_for=attribute, value=value)
         return values
 
 
@@ -156,18 +227,7 @@ class OutputSdmxMl(OutputBase):
         return 'SDMX output'
 
 
-    def make_obs(self, row, indicator=None):
-        key = self.dsd.make_key(Key, self.get_dimension_values(row, indicator))
-        attrs = self.get_attribute_values(row, indicator)
-        return Observation(
-            dimension=key,
-            attached_attribute=attrs,
-            value_for=self.dsd.measures[0],
-            value=row[self.dsd.measures[0].id],
-        )
-
-
-    def get_documentation_content(self, languages=None):
+    def get_documentation_content(self, languages=None, baseurl=''):
 
         indicator_ids = self.get_documentation_indicator_ids()
 
@@ -178,7 +238,7 @@ class OutputSdmxMl(OutputBase):
         output += '<li><a href="' + path + '">' + path + '</a></li>'
         for indicator_id in indicator_ids:
             path = endpoint.format(indicator_id=indicator_id)
-            output += '<li><a href="' + path + '">' + path + '</a></li>'
+            output += '<li><a href="' + baseurl + path + '">' + path + '</a></li>'
         output += '<li>etc...</li>'
         output += '</ul>'
 
