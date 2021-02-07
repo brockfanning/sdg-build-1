@@ -8,7 +8,8 @@ class InputMetaFiles(InputFiles):
     """Sources of SDG metadata that are local files."""
 
     def __init__(self, path_pattern='', git=True, git_data_dir='data',
-                 git_data_filemask='indicator_*.csv', metadata_mapping=None):
+                 git_data_filemask='indicator_*.csv', metadata_mapping=None,
+                 indicator_id_pattern=None):
         """Constructor for InputMetaFiles.
 
         Keyword arguments:
@@ -26,7 +27,7 @@ class InputMetaFiles(InputFiles):
         self.git_data_dir = git_data_dir
         self.git_data_filemask = git_data_filemask
         self.metadata_mapping = metadata_mapping
-        InputFiles.__init__(self, path_pattern)
+        InputFiles.__init__(self, path_pattern, indicator_id_pattern=indicator_id_pattern)
 
 
     def execute(self, indicator_options):

@@ -7,9 +7,11 @@ class InputCsvData(InputFiles):
     """Sources of SDG data that are local CSV files."""
 
     def convert_filename_to_indicator_id(self, filename):
-        """Assume the file naming convention: 'indicator_1-1-1'."""
-        inid = filename.replace('indicator_', '')
-        return inid
+        if self.indicator_id_pattern is not None:
+            return InputFiles.convert_filename_to_indicator_id(self, filename)
+        else:
+            return filename.replace('indicator_', '')
+
 
     def execute(self, indicator_options):
         """Get the data, edges, and headline from CSV, returning a list of indicators."""
