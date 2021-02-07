@@ -8,7 +8,8 @@ class InputMetaFiles(InputFiles):
     """Sources of SDG metadata that are local files."""
 
     def __init__(self, path_pattern='', git=True, git_data_dir='data',
-                 git_data_filemask='indicator_*.csv', metadata_mapping=None):
+                 git_data_filemask='indicator_*.csv', metadata_mapping=None,
+                 indicator_id_pattern=None):
         """Constructor for InputMetaFiles.
 
         Keyword arguments:
@@ -26,7 +27,7 @@ class InputMetaFiles(InputFiles):
         self.git_data_dir = git_data_dir
         self.git_data_filemask = git_data_filemask
         self.metadata_mapping = metadata_mapping
-        InputFiles.__init__(self, path_pattern)
+        InputFiles.__init__(self, path_pattern, indicator_id_pattern=indicator_id_pattern)
 
 
     def execute(self, indicator_options):
@@ -88,7 +89,7 @@ class InputMetaFiles(InputFiles):
             data_update = self.get_git_update(data_filepath)
             updates['national_data_update_url_text'] = data_update['date'] + ': see changes on GitHub'
             updates['national_data_update_url'] = data_update['commit_url']
-        
+
         return updates
 
 
@@ -96,7 +97,7 @@ class InputMetaFiles(InputFiles):
         """Change into the working directory of the file (it might be a submodule)
         and get the latest git history"""
         folder = os.path.split(filepath)[0]
-        
+
         repo = git.Repo(folder, search_parent_directories=True)
         # Need to translate relative to the repo root (this may be a submodule)
         repo_dir = os.path.relpath(repo.working_dir, os.getcwd())
@@ -108,12 +109,12 @@ class InputMetaFiles(InputFiles):
         remote = repo.remote().url
         remote_bare = re.sub('^.*github\.com(:|\/)', '', remote).replace('.git','')
         commit_url = 'https://github.com/'+remote_bare+'/commit/'+git_sha
-        
+
         return {
             'date': git_date,
             'commit_url': commit_url
         }
-    
+
 
     def load_metadata_mapping(self):
         mapping = None
