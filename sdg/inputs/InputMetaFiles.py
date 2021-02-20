@@ -9,7 +9,7 @@ class InputMetaFiles(InputFiles):
 
     def __init__(self, path_pattern='', git=True, git_data_dir='data',
                  git_data_filemask='indicator_*.csv', metadata_mapping=None,
-                 indicator_id_pattern=None):
+                 indicator_id_pattern=None, logging=None):
         """Constructor for InputMetaFiles.
 
         Keyword arguments:
@@ -23,6 +23,7 @@ class InputMetaFiles(InputFiles):
         metadata_mapping -- a dict mapping human-readable labels to machine keys
           or a path to a CSV file
         """
+        InputFiles.__init__(self, path_pattern, logging=logging)
         self.git = git
         self.git_data_dir = git_data_dir
         self.git_data_filemask = git_data_filemask
@@ -31,6 +32,7 @@ class InputMetaFiles(InputFiles):
 
 
     def execute(self, indicator_options):
+        InputFiles.execute(self, indicator_options)
         """Get the metadata from the files."""
         self.load_metadata_mapping()
         indicator_map = self.get_indicator_map()

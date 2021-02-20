@@ -14,6 +14,7 @@ class InputCsvData(InputFiles):
 
 
     def execute(self, indicator_options):
+        InputFiles.execute(self, indicator_options)
         """Get the data, edges, and headline from CSV, returning a list of indicators."""
         indicator_map = self.get_indicator_map()
         for inid in indicator_map:
