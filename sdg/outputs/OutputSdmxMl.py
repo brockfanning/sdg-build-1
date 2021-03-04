@@ -11,6 +11,7 @@ from sdmx.model import (
     AttributeValue,
     Observation,
     GenericTimeSeriesDataSet,
+    StructureSpecificTimeSeriesDataSet,
     DataflowDefinition,
     Agency
 )
@@ -27,7 +28,7 @@ class OutputSdmxMl(OutputBase):
 
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
                  indicator_options=None, dsd='https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=children',
-                 default_values=None, header_id=None, sender_id=None):
+                 default_values=None, header_id=None, sender_id=None, sdmx_format='StructureSpecific'):
         """Constructor for OutputSdmxMl.
 
         This output assumes the following:
@@ -59,10 +60,14 @@ class OutputSdmxMl(OutputBase):
             Optional identifying string to put in the "id" attribut of the "Sender" element
             in the header of the XML. If not specified, it will be the current version
             of this library.
+        sdmx_format : string
+            Which format of SDMX-ML to create. Choices are "Generic" or "StructureSpecific".
+            If not specified, the default is StructureSpecific.
         """
         OutputBase.__init__(self, inputs, schema, output_folder, translations, indicator_options)
         self.header_id = header_id
         self.sender_id = sender_id
+        self.sdmx_format = sdmx_format
         self.retrieve_dsd(dsd)
         sdmx_folder = os.path.join(output_folder, 'sdmx')
         if not os.path.exists(sdmx_folder):
@@ -124,7 +129,10 @@ class OutputSdmxMl(OutputBase):
                     serieses[series_key] = []
                 serieses[series_key].append(observation)
 
-            dataset = GenericTimeSeriesDataSet(structured_by=self.dsd, series=serieses)
+            if self.sdmx_format == 'Generic':
+                dataset = GenericTimeSeriesDataSet(structured_by=self.dsd, series=serieses)
+            else:
+                dataset = StructureSpecificTimeSeriesDataSet(structured_by=self.dsd, series=serieses)
             header = self.create_header()
             time_period = next(dim for dim in self.dsd.dimensions if dim.id == 'TIME_PERIOD')
             msg = DataMessage(data=[dataset], dataflow=dfd, header=header, observation_dimension=time_period)
