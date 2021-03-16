@@ -25,6 +25,7 @@ from sdmx.message import (
 )
 from urllib.request import urlretrieve
 from sdg.outputs import OutputBase
+from sdg.data_schemas import DataSchemaInputSdmxDsd
 
 class OutputSdmxMl(OutputBase):
     """Output SDG data/metadata in SDMX-ML."""
@@ -33,7 +34,8 @@ class OutputSdmxMl(OutputBase):
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
                  indicator_options=None, dsd='https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=children',
                  default_values=None, header_id=None, sender_id=None, extend_dsd=False,
-                 dsd_languages=None, structure_specific=False):
+                 dsd_languages=None, structure_specific=False,
+                 constrain_data=True):
         """Constructor for OutputSdmxMl.
 
         This output can be used for two different use-cases:
@@ -81,6 +83,9 @@ class OutputSdmxMl(OutputBase):
             when appending codes to codelists. Not used unless extend_dsd is True.
         structure_specific : boolean
             Whether to output as StructureSpecific instead of Generic data.
+        constrain_data : boolean
+            Whether to use the DSD to remove any rows of data that are not compliant.
+            Defaults to True.
         """
         OutputBase.__init__(self, inputs, schema, output_folder, translations, indicator_options)
         self.header_id = header_id
@@ -90,7 +95,9 @@ class OutputSdmxMl(OutputBase):
             dsd_languages = ['en']
         self.dsd_languages = dsd_languages
         self.structure_specific = structure_specific
+        self.constrain_data = constrain_data
         self.retrieve_dsd(dsd)
+        self.data_schema = DataSchemaInputSdmxDsd(source=self.dsd)
         sdmx_folder = os.path.join(output_folder, 'sdmx')
         if not os.path.exists(sdmx_folder):
             os.makedirs(sdmx_folder, exist_ok=True)
@@ -180,6 +187,11 @@ class OutputSdmxMl(OutputBase):
         for indicator_id in self.get_indicator_ids():
             indicator = self.get_indicator_by_id(indicator_id).language(language)
             data = indicator.data.copy()
+
+            if self.constrain_data:
+                data = indicator.get_data_matching_schema(self.data_schema)
+            else:
+                data = indicator.data.copy()
 
             # Some hardcoded dataframe changes.
             data = data.rename(columns={
