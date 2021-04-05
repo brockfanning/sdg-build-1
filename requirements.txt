@@ -8,4 +8,6 @@ requests
 humanize
 unicode-slugify
 pyjstat
+frictionless
+csvw
 git+git://github.com/dougmet/yamlmd
