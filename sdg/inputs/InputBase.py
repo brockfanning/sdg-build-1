@@ -222,7 +222,15 @@ class InputBase(Loggable):
             return data
         # Perform any alterations on the data.
         for alteration in self.data_alterations:
-            data = alteration(data=data, indicator_id=indicator_id, indicator_name=indicator_name, meta=meta)
+            try:
+                data = alteration(data, {
+                    'indicator_id': indicator_id,
+                    'indicator_name': indicator_name,
+                    'meta': meta
+                })
+            except:
+                # Handle callbacks without the context parameter.
+                data = alteration(data)
         # Always do these hardcoded steps.
         data = self.fix_dataframe_columns(data)
         data = self.fix_empty_values(data)
@@ -243,7 +251,15 @@ class InputBase(Loggable):
             else:
                 return meta
         for alteration in self.meta_alterations:
-            meta = alteration(meta=meta, indicator_id=indicator_id, indicator_name=indicator_name, data=data)
+            try:
+                meta = alteration(meta, {
+                    'indicator_id': indicator_id,
+                    'indicator_name': indicator_name,
+                    'data': data
+                })
+            except:
+                # Handle callbacks without the context parameter.
+                meta = alteration(meta)
         return meta
 
 
@@ -258,7 +274,15 @@ class InputBase(Loggable):
         # Perform any alterations on the indicator id.
         if len(self.indicator_id_alterations) > 0:
             for alteration in self.indicator_id_alterations:
-                indicator_id = alteration(indicator_id=indicator_id, indicator_name=indicator_name, data=data, meta=meta)
+                try:
+                    indicator_id = alteration(indicator_id, {
+                        'indicator_name': indicator_name,
+                        'data': data,
+                        'meta': meta
+                    })
+                except:
+                    # Handle callbacks without the context parameter.
+                    indicator_id = alteration(indicator_id)
         return indicator_id
 
 
@@ -275,7 +299,15 @@ class InputBase(Loggable):
         # Perform any alterations on the indicator id.
         if len(self.indicator_name_alterations) > 0:
             for alteration in self.indicator_name_alterations:
-                indicator_name = alteration(indicator_name=indicator_name, indicator_id=indicator_id, data=data, meta=meta)
+                try:
+                    indicator_name = alteration(indicator_name, {
+                        'indicator_id': indicator_id,
+                        'data': data,
+                        'meta': meta
+                    })
+                except:
+                    # Handle callbacks without the context parameter.
+                    indicator_name = alteration(indicator_name)
         return indicator_name
 
 
