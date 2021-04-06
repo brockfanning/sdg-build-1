@@ -9,4 +9,5 @@ humanize
 unicode-slugify
 frictionless
 csvw
+pyjstat
 git+git://github.com/dougmet/yamlmd
