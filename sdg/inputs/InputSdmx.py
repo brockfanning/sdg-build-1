@@ -4,6 +4,7 @@ from xml.etree import ElementTree as ET
 from io import StringIO
 import pandas as pd
 import numpy as np
+from sdg import helpers
 
 class InputSdmx(InputBase):
     """Sources of SDG data that are SDMX format."""
@@ -22,7 +23,8 @@ class InputSdmx(InputBase):
                  dsd='https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=children',
                  indicator_id_xpath=".//Annotation[AnnotationTitle='Indicator']/AnnotationText",
                  indicator_name_xpath=".//Annotation[AnnotationTitle='IndicatorTitle']/AnnotationText",
-                 logging=None):
+                 logging=None,
+                 request_params=None):
         """Constructor for InputSdmx.
 
         Parameters
@@ -91,23 +93,7 @@ class InputSdmx(InputBase):
 
 
     def parse_xml(self, location, strip_namespaces=True):
-        """Fetch and parse an XML file.
-
-        Parameters
-        ----------
-        location : string
-            Remote URL of the XML file or path to local file.
-        strip_namespaces : boolean
-            Whether or not to strip namespaces. This is helpful in cases where
-            different implementations may use different namespaces/prefixes.
-        """
-        xml = self.fetch_file(location)
-        it = ET.iterparse(StringIO(xml))
-        if strip_namespaces:
-            for _, el in it:
-                if '}' in el.tag:
-                    el.tag = el.tag.split('}', 1)[1]
-        return it.root
+        return helpers.sdmx.parse_xml(location, request_params=self.request_params)
 
 
     def dimension_id_to_codelist_id(self, dimension_id):
