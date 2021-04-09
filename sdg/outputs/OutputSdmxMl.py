@@ -35,7 +35,7 @@ class OutputSdmxMl(OutputBase):
                  indicator_options=None, dsd='https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=children',
                  default_values=None, header_id=None, sender_id=None, extend_dsd=False,
                  dsd_languages=None, structure_specific=False, constrain_data=False,
-                 column_map=None):
+                 column_map=None, code_map=None):
         """Constructor for OutputSdmxMl.
 
         This output can be used for two different use-cases:
