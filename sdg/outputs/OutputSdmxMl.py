@@ -177,7 +177,7 @@ class OutputSdmxMl(OutputBase):
                             code.name[language] = translated
 
         # Get a fresh SDMX message to we can update the header and dsd.
-        message = helpers.sdmx.get_dsd_message(dsd, request_params=self.request_params)
+        message = helpers.sdmx.get_sdmx_message(dsd, request_params=self.request_params)
         message.header = self.create_header()
         message.structure[0] = self.dsd
 
