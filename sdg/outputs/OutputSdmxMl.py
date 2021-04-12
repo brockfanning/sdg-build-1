@@ -25,6 +25,7 @@ from sdmx.message import (
 )
 from urllib.request import urlretrieve
 from sdg.outputs import OutputBase
+from sdg import helpers
 from sdg.data_schemas import DataSchemaInputSdmxDsd
 
 class OutputSdmxMl(OutputBase):
@@ -32,10 +33,11 @@ class OutputSdmxMl(OutputBase):
 
 
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
-                 indicator_options=None, dsd='https://registry.sdmx.org/ws/public/sdmxapi/rest/datastructure/IAEG-SDGs/SDG/latest/?format=sdmx-2.1&detail=full&references=children',
-                 default_values=None, header_id=None, sender_id=None, extend_dsd=False,
-                 dsd_languages=None, structure_specific=False, constrain_data=False,
-                 column_map=None, code_map=None):
+                 indicator_options=None, dsd=None, default_values=None,
+                 header_id=None, sender_id=None, structure_specific=False,
+                 column_map=None, code_map=None, constrain_data=False,
+                 request_params=None, extend_dsd=False, dsd_languages=None):
+
         """Constructor for OutputSdmxMl.
 
         This output can be used for two different use-cases:
@@ -93,7 +95,8 @@ class OutputSdmxMl(OutputBase):
             Whether to use the DSD to remove any rows of data that are not compliant.
             Defaults to False.
         """
-        OutputBase.__init__(self, inputs, schema, output_folder, translations, indicator_options)
+        OutputBase.__init__(self, inputs, schema, output_folder, translations,
+            indicator_options, request_params=request_params)
         self.header_id = header_id
         self.sender_id = sender_id
         self.extend_dsd = extend_dsd
@@ -111,20 +114,6 @@ class OutputSdmxMl(OutputBase):
             os.makedirs(sdmx_folder, exist_ok=True)
         self.sdmx_folder = sdmx_folder
         self.default_values = {} if default_values is None else default_values
-
-
-    def retrieve_dsd(self, dsd):
-
-        if dsd.startswith('http'):
-            urlretrieve(dsd, 'dsd.xml')
-            dsd = 'dsd.xml'
-        else:
-            copyfile(dsd, 'dsd.xml')
-        msg = sdmx.read_sdmx(dsd)
-        dsd_object = msg.structure[0]
-        self.dsd_msg = msg
-        self.dsd = dsd_object
-        self.extend_dsd_codelists()
 
 
     def extend_dsd_codelists(self):
@@ -180,6 +169,11 @@ class OutputSdmxMl(OutputBase):
         # Go ahead and overwrite the DSD file now.
         with open('dsd.xml', 'wb') as f:
             f.write(sdmx.to_xml(self.dsd_msg, encoding='utf-8', pretty_print=True))
+
+
+    def retrieve_dsd(self, dsd):
+        self.dsd = helpers.sdmx.get_dsd(dsd, request_params=self.request_params)
+        self.extend_dsd_codelists()
 
 
     def build(self, language=None):
