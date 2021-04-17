@@ -23,6 +23,8 @@ class InputBase(Loggable):
         self.indicators = {}
         self.data_alterations = []
         self.meta_alterations = []
+        self.indicator_id_alterations = []
+        self.indicator_name_alterations = []
         self.last_executed_indicator_options = None
         self.merged_indicators = None
         self.previously_merged_inputs = []
@@ -187,13 +189,16 @@ class InputBase(Loggable):
         options : IndicatorOptions or None
             The indicator options
         """
-        data = self.alter_data(data)
-        meta = self.alter_meta(meta)
+        # Perform alterations in this order: id, name, data, meta
+        indicator_id = self.alter_indicator_id(indicator_id, indicator_name=name, data=data, meta=meta)
+        name = self.alter_indicator_name(name, indicator_id, data=data, meta=meta)
+        data = self.alter_data(data, indicator_id=indicator_id, indicator_name=name, meta=meta)
+        meta = self.alter_meta(meta, indicator_id=indicator_id, indicator_name=name, data=data)
         indicator = Indicator(indicator_id, name=name, data=data, meta=meta, options=options, logging=self.logging)
         self.indicators[indicator_id] = indicator
 
 
-    def alter_data(self, data):
+    def alter_data(self, data, indicator_id=None, indicator_name=None, meta=None):
         """Perform any alterations on some data.
 
         Parameters
@@ -205,7 +210,17 @@ class InputBase(Loggable):
             return data
         # Perform any alterations on the data.
         for alteration in self.data_alterations:
-            data = alteration(data)
+            try:
+                data = alteration(data, {
+                    'indicator_id': indicator_id,
+                    'indicator_name': indicator_name,
+                    'meta': meta
+                })
+            except:
+                # Handle callbacks without the context parameter.
+                data = alteration(data)
+        if data is None:
+            raise Exception('Data alteration functions should return the altered dataframe.')
         # Always do these hardcoded steps.
         data = self.fix_dataframe_columns(data)
         data = self.fix_empty_values(data)
@@ -213,7 +228,7 @@ class InputBase(Loggable):
         return data
 
 
-    def alter_meta(self, meta):
+    def alter_meta(self, meta, indicator_id=None, indicator_name=None, data=None):
         """Perform any alterations on some metadata.
 
         Parameters
@@ -226,8 +241,68 @@ class InputBase(Loggable):
             else:
                 return meta
         for alteration in self.meta_alterations:
-            meta = alteration(meta)
+            try:
+                meta = alteration(meta, {
+                    'indicator_id': indicator_id,
+                    'indicator_name': indicator_name,
+                    'data': data
+                })
+            except:
+                # Handle callbacks without the context parameter.
+                meta = alteration(meta)
+        if meta is None:
+            raise Exception('Metadata alteration functions should return the altered dict.')
         return meta
+
+
+    def alter_indicator_id(self, indicator_id, indicator_name=None, data=None, meta=None):
+        """Alter an indicator id (1-1-1, 1-2-1, etc).
+
+        Parameters
+        ----------
+        indicator_id : string
+            The raw indicator ID
+        """
+        # Perform any alterations on the indicator id.
+        if len(self.indicator_id_alterations) > 0:
+            for alteration in self.indicator_id_alterations:
+                try:
+                    indicator_id = alteration(indicator_id, {
+                        'indicator_name': indicator_name,
+                        'data': data,
+                        'meta': meta
+                    })
+                except:
+                    # Handle callbacks without the context parameter.
+                    indicator_id = alteration(indicator_id)
+        # Always make sure that dots are replaced with dashes.
+        indicator_id = indicator_id.replace('.', '-')
+        return indicator_id
+
+
+    def alter_indicator_name(self, indicator_name, indicator_id, data=None, meta=None):
+        """Alter an indicator name.
+
+        Parameters
+        ----------
+        indicator_name : string
+            The raw indicator name
+        indicator_id : string
+            The indicator id (eg, 1.1.1, 1-1-1, etc.) for this indicator
+        """
+        # Perform any alterations on the indicator id.
+        if len(self.indicator_name_alterations) > 0:
+            for alteration in self.indicator_name_alterations:
+                try:
+                    indicator_name = alteration(indicator_name, {
+                        'indicator_id': indicator_id,
+                        'data': data,
+                        'meta': meta
+                    })
+                except:
+                    # Handle callbacks without the context parameter.
+                    indicator_name = alteration(indicator_name)
+        return indicator_name
 
 
     def add_data_alteration(self, alteration):
@@ -250,6 +325,28 @@ class InputBase(Loggable):
             The alteration function.
         """
         self.meta_alterations.append(alteration)
+
+
+    def add_indicator_id_alteration(self, alteration):
+        """Add an alteration for indicator id.
+
+        Parameters
+        ----------
+        alteration : function
+            The alteration function.
+        """
+        self.indicator_id_alterations.append(alteration)
+
+
+    def add_indicator_name_alteration(self, alteration):
+        """Add an alteration for indicator name.
+
+        Parameters
+        ----------
+        alteration : function
+            The alteration function.
+        """
+        self.indicator_name_alterations.append(alteration)
 
 
     def has_merged_indicators(self, inputs):
