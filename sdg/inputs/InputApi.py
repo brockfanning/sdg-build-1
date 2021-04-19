@@ -17,7 +17,8 @@ class InputApi(InputBase):
     """
 
     def __init__(self, endpoint, indicator_id_map=None, logging=None, post_data=None,
-                 year_column=None, value_column=None, sleep=None):
+                 year_column=None, value_column=None, sleep=None,
+                 column_map=None, code_map=None):
         """Constructor for InputApi input.
 
         Parameters
@@ -45,7 +46,8 @@ class InputApi(InputBase):
         self.year_column = year_column
         self.value_column = value_column
         self.sleep = sleep
-        InputBase.__init__(self, logging=logging)
+        InputBase.__init__(self, logging=logging, column_map=column_map,
+            code_map=code_map)
 
 
     def indicator_data_from_json(self, json_response):

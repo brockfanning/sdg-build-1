@@ -16,7 +16,8 @@ class InputBase(Loggable):
         @see https://docs.python.org/3/library/urllib.request.html#urllib.request.Request
     """
 
-    def __init__(self, logging=None, request_params=None):
+    def __init__(self, logging=None, request_params=None,
+                 column_map=None, code_map=None):
         """Constructor for InputBase."""
         Loggable.__init__(self, logging=logging)
         self.request_params = request_params
@@ -29,6 +30,8 @@ class InputBase(Loggable):
         self.merged_indicators = None
         self.previously_merged_inputs = []
         self.num_previously_merged_inputs = 0
+        self.column_map = column_map
+        self.code_map = code_map
 
 
     def execute_once(self, indicator_options):
@@ -214,6 +217,9 @@ class InputBase(Loggable):
         # If empty or None, do nothing.
         if data is None or not isinstance(data, pd.DataFrame) or data.empty:
             return data
+        # Apply any mappings.
+        self.apply_column_map()
+        self.apply_code_map()
         # Perform any alterations on the data.
         for alteration in self.data_alterations:
             try:
@@ -401,3 +407,29 @@ class InputBase(Loggable):
         self.merged_indicators = merged_indicators
         self.previously_merged_inputs = inputs
         self.num_previously_merged_inputs = len(inputs)
+
+
+    def apply_column_map(self):
+        if self.column_map is not None:
+            column_map=pd.read_csv(self.column_map)
+            for col in data.columns:
+                if col in column_map['Text'].to_list():
+                    try:
+                        newcol=column_map['Value'].loc[column_map['Text']==col].iloc[0]
+                        data.rename(columns={col:newcol}, inplace=True)
+                    except Exception as e:
+                        self.warn('Error when mapping data column: ' + col)
+                        print(e)
+
+
+    def apply_code_map(self):
+        if self.code_map is not None:
+            code_map=pd.read_csv(self.code_map)
+            for col in data.columns:
+                for i in data.index:
+                    try:
+                        if data.at[i, col] in code_map['Text'].to_list():
+                            data.at[i, col]=code_map['Value'].loc[code_map['Dimension']==col].loc[code_map['Text']==data.at[i, col]].iloc[0]
+                    except Exception as e:
+                        self.warn('Error when mapping codes for column ' + col)
+                        print(e)
