@@ -218,8 +218,8 @@ class InputBase(Loggable):
         if data is None or not isinstance(data, pd.DataFrame) or data.empty:
             return data
         # Apply any mappings.
-        self.apply_column_map()
-        self.apply_code_map()
+        data = self.apply_column_map(data)
+        data = self.apply_code_map(data)
         # Perform any alterations on the data.
         for alteration in self.data_alterations:
             try:
@@ -409,7 +409,7 @@ class InputBase(Loggable):
         self.num_previously_merged_inputs = len(inputs)
 
 
-    def apply_column_map(self):
+    def apply_column_map(self, data):
         if self.column_map is not None:
             column_map=pd.read_csv(self.column_map)
             for col in data.columns:
@@ -420,9 +420,10 @@ class InputBase(Loggable):
                     except Exception as e:
                         self.warn('Error when mapping data column: ' + col)
                         print(e)
+        return data
 
 
-    def apply_code_map(self):
+    def apply_code_map(self, data):
         if self.code_map is not None:
             code_map=pd.read_csv(self.code_map)
             for col in data.columns:
@@ -433,3 +434,4 @@ class InputBase(Loggable):
                     except Exception as e:
                         self.warn('Error when mapping codes for column ' + col)
                         print(e)
+        return data
