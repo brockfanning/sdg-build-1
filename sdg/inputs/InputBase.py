@@ -7,8 +7,25 @@ from sdg.Loggable import Loggable
 class InputBase(Loggable):
     """Base class for sources of SDG data/metadata."""
 
-    def __init__(self, logging=None, column_map=None, code_map=None, no_new_indicators=False):
-        """Constructor for InputBase."""
+    def __init__(self, logging=None, column_map=None, code_map=None, meta_suffix=None,
+                 no_new_indicators=False):
+        """Constructor for InputBase.
+        logging : list
+            List of types of log message to output. Values can include 'debug' or 'warn'.
+        column_map : string
+            Remote URL of CSV column mapping or path to local CSV column mapping file
+        code_map : string
+            Remote URL of CSV code mapping or path to local CSV code mapping file
+        meta_suffix : string
+            String to add to each metadata key. Intended usage is to allow identical
+            sets of metadata - one for global and one for national.
+        no_new_indicators : boolean
+            If True, this input will only pull in data/metadata for indicators
+            that other inputs have already pulled in. Useful if you want to
+            import data/metadata from a remote source, but only for those
+            indicators you are already using in other local inputs.
+            Defaults to False.
+        """
         Loggable.__init__(self, logging=logging)
         self.indicators = {}
         self.data_alterations = []
@@ -20,6 +37,7 @@ class InputBase(Loggable):
         self.column_map = column_map
         self.code_map = code_map
         self.no_new_indicators = no_new_indicators
+        self.meta_suffix = meta_suffix
 
 
     def execute_once(self, indicator_options):
@@ -239,6 +257,11 @@ class InputBase(Loggable):
                 return meta
         for alteration in self.meta_alterations:
             meta = alteration(meta)
+        if self.meta_suffix is not None:
+            for key in list(meta.keys()):
+                if not key.endswith(self.meta_suffix):
+                    meta[key + self.meta_suffix] = meta[key]
+                    del meta[key]
         return meta
 
 

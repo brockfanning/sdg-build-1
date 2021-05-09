@@ -24,7 +24,8 @@ class InputSdmx(InputBase):
                  indicator_name_xpath=".//Annotation[AnnotationTitle='IndicatorTitle']/AnnotationText",
                  logging=None,
                  column_map=None, code_map=None,
-                 no_new_indicators=False):
+                 no_new_indicators=False,
+                 meta_suffix=None):
         """Constructor for InputSdmx.
 
         Parameters
@@ -73,7 +74,8 @@ class InputSdmx(InputBase):
             Defaults to False.
         """
         InputBase.__init__(self, logging=logging, column_map=column_map,
-            code_map=code_map, no_new_indicators=no_new_indicators)
+            code_map=code_map, no_new_indicators=no_new_indicators,
+            meta_suffix=meta_suffix)
         if drop_dimensions is None:
             drop_dimensions = []
         if dimension_map is None:
