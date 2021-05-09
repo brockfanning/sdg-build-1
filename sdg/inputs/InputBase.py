@@ -7,7 +7,7 @@ from sdg.Loggable import Loggable
 class InputBase(Loggable):
     """Base class for sources of SDG data/metadata."""
 
-    def __init__(self, logging=None, column_map=None, code_map=None):
+    def __init__(self, logging=None, column_map=None, code_map=None, no_new_indicators=False):
         """Constructor for InputBase."""
         Loggable.__init__(self, logging=logging)
         self.indicators = {}
@@ -19,6 +19,7 @@ class InputBase(Loggable):
         self.num_previously_merged_inputs = 0
         self.column_map = column_map
         self.code_map = code_map
+        self.no_new_indicators = no_new_indicators
 
 
     def execute_once(self, indicator_options):

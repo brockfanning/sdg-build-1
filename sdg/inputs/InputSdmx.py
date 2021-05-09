@@ -23,7 +23,8 @@ class InputSdmx(InputBase):
                  indicator_id_xpath=".//Annotation[AnnotationTitle='Indicator']/AnnotationText",
                  indicator_name_xpath=".//Annotation[AnnotationTitle='IndicatorTitle']/AnnotationText",
                  logging=None,
-                 column_map=None, code_map=None):
+                 column_map=None, code_map=None,
+                 no_new_indicators=False):
         """Constructor for InputSdmx.
 
         Parameters
@@ -64,9 +65,15 @@ class InputSdmx(InputBase):
             An xpath query to find the indicator id within each Series code
         indicator_name_xpath : string
             An xpath query to find the indicator name within each Series code
+        no_new_indicators : boolean
+            If True, this input will only pull in data/metadata for indicators
+            that other inputs have already pulled in. Useful if you want to
+            import data/metadata from a remote source, but only for those
+            indicators you are already using in other local inputs.
+            Defaults to False.
         """
         InputBase.__init__(self, logging=logging, column_map=column_map,
-            code_map=code_map)
+            code_map=code_map, no_new_indicators=no_new_indicators)
         if drop_dimensions is None:
             drop_dimensions = []
         if dimension_map is None:

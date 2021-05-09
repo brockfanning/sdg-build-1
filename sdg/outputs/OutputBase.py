@@ -106,8 +106,11 @@ class OutputBase(Loggable):
             # Merge the results.
             for inid in input.indicators:
                 if inid not in merged_indicators:
-                    # If this indicator is new, simply use it.
-                    merged_indicators[inid] = input.indicators[inid]
+                    # If this indicator is new, use it if able.
+                    if input.no_new_indicators:
+                        continue
+                    else:
+                        merged_indicators[inid] = input.indicators[inid]
                 else:
                     # Otherwise if this indicator was already there, it needs to
                     # be "merged" in. To do this, we manually set data, metadata,
