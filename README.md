@@ -29,22 +29,61 @@ SDG Build can **output** SDG data in the following formats:
 * GeoJSON for mapping (there is not a global standard for SDG GeoJSON at this time, so this is our best guess at a useful structure)
 * SDMX-ML output
 
-## Alterations of data and metadata
+## Alterations of data, metadata, indicator ID, and indicator name
 
-Sometimes you may need to alter data and/or metadata before importing into this library. This can be done after instantiating the input objects, with `add_data_alteration` and `add_meta_alteration`. For example:
+Sometimes you may need to alter each indicator's data/metadata/id/name before importing into this library. This can be done after instantiating the input objects, with `add_data_alteration`, `add_meta_alteration`, `add_indicator_id_alteration`, and `add_indicator_name_alteration`. Each of these takes a callback function as a parameter.
+
+In these callback functions, the thing to be altered is passed as the first parameter, followed by an optional "context" dict, containing the other three items. These
+"context" dicts contain:
+
+* data : Pandas Dataframe (or None)
+* meta : dict (or None)
+* indicator_id : string
+* indicator_name : string (or None)
+
+Here are some examples of using these:
 
 ```
-def my_data_alteration(df):
-    # Drop an unnecessary column in the data.
-    df = df.drop('unnecessary_column', axis='columns')
-    return df
-def my_meta_alteration(meta):
-    # Drop an unecessary field in the metadata.
-    del meta['unnecessary_field']
-    return meta
-my_data_input.add_data_alteration(my_data_alteration)
-my_meta_input.add_meta_alteration(my_meta_alteration)
+def my_indicator_id_alteration(indicator_id, context):
+  # Control a particular indicator id by checking the name.
+  if context['indicator_name'] == 'My particular indicator name':
+    return 'my-particular-indicator-id'
+  else:
+    return indicator_id
+
+def my_indicator_name_alteration(indicator_name, context):
+  # Maybe we need to use a particular metadata field for the name.
+  return context['meta']['my_name_field']
+
+def my_data_alteration(data, context):
+  # Maybe we need to drop an unnecessary column in the data.
+  return df.drop('unnecessary_column', axis='columns')
+
+def my_meta_alteration(meta, context):
+  # Maybe we need to set the indicator ID as a particular field.
+  meta['my_id_field'] = context['indicator_id']
+  return meta
+
+my_input.add_indicator_id_alteration(my_indicator_id_alteration)
+my_input.add_indicator_name_alteration(my_indicator_name_alteration)
+my_input.add_data_alteration(my_data_alteration)
+my_input.add_meta_alteration(my_meta_alteration)
 ```
+
+### Order of alterations
+
+The order of the alterations may be important to know. They can't all be simultaneous, so here is the order they will happen in:
+
+1. Indicator ID
+2. Indicator name
+3. Data
+4. Metadata
+
+The reason this may be important is, for example, when the indicator name is being altered, the data has not be altered yet; but when the metadata is being altered, the data *has* been altered.
+
+### Note about multiple inputs
+
+In some cases, you may use multiple inputs at the same time, such as YAML files for metadata and CSV files for data. **Note that the `context` parameter described above is limited to each individual input.** For example, if a particular input contains no metadata, then `context['meta']` will be `None` during the alteration of that input. And similarly, if a particular input contains no data, then `context['data']` will be `None` during the alteration of that input. This is important to keep in mind, as you may be expecting that the `context` parameter will have a combination of all inputs.
 
 ## Schemas
 
