@@ -3,23 +3,16 @@ import pandas as pd
 import numpy as np
 from sdg.Indicator import Indicator
 from sdg.Loggable import Loggable
+from sdg import helpers
 
 class InputBase(Loggable):
     """Base class for sources of SDG data/metadata."""
 
-    def __init__(self, logging=None, column_map=None, code_map=None, meta_suffix=None):
-        """Constructor for InputBase.
-        logging : list
-            List of types of log message to output. Values can include 'debug' or 'warn'.
-        column_map: string
-            Remote URL of CSV column mapping or path to local CSV column mapping file
-        code_map: string
-            Remote URL of CSV code mapping or path to local CSV code mapping file
-        meta_suffix: string
-            String to add to each metadata key. Intended usage is to allow identical
-            sets of metadata - one for global and one for national.
-        """
+    def __init__(self, logging=None, column_map=None, code_map=None, meta_suffix=None,
+                 request_params=None):
+        """Constructor for InputBase."""
         Loggable.__init__(self, logging=logging)
+        self.request_params = request_params
         self.indicators = {}
         self.data_alterations = []
         self.meta_alterations = []
@@ -114,23 +107,7 @@ class InputBase(Loggable):
 
 
     def fetch_file(self, location):
-        """Fetch a file, either on disk, or on the Internet.
-
-        Parameters
-        ----------
-        location : String
-            Either an http address, or a path on disk
-        """
-        file = None
-        data = None
-        if location.startswith('http'):
-            file = urlopen(location)
-            data = file.read().decode('utf-8')
-        else:
-            file = open(location)
-            data = file.read()
-        file.close()
-        return data
+        return helpers.files.read_file(location, request_params=self.request_params)
 
 
     def normalize_indicator_id(self, indicator_id):
