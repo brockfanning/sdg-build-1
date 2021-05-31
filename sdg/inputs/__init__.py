@@ -19,3 +19,4 @@ from .InputJsonStat import InputJsonStat
 from .InputPxWebApi import InputPxWebApi
 from .InputSdmxMl_UnitedNationsApi import InputSdmxMl_UnitedNationsApi
 from .InputOpenDataPlatform import InputOpenDataPlatform
+from .InputOpenDataPlatformMeta import InputOpenDataPlatformMeta

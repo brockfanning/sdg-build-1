@@ -467,6 +467,7 @@ def open_sdg_input_from_dict(params, options):
         'InputOpenDataPlatform',
         'InputJsonStat',
         'InputPxWebApi',
+        'InputOpenDataPlatformMeta',
         'InputWordMeta',
     ]
     if input_class not in allowed:
@@ -512,6 +513,8 @@ def open_sdg_input_from_dict(params, options):
         input_instance = sdg.inputs.InputJsonStat(**params)
     elif input_class == 'InputPxWebApi':
         input_instance = sdg.inputs.InputPxWebApi(**params)
+    elif input_class == 'InputOpenDataPlatformMeta':
+        input_instance = sdg.inputs.InputOpenDataPlatformMeta(**params)
     elif input_class == 'InputWordMeta':
         input_instance = sdg.inputs.InputWordMeta(**params)
 
