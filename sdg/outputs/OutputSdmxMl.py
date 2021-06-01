@@ -34,7 +34,7 @@ class OutputSdmxMl(OutputBase):
                  indicator_options=None, dsd=None, default_values=None,
                  header_id=None, sender_id=None, structure_specific=False,
                  column_map=None, code_map=None, constrain_data=False,
-                 request_params=None):
+                 request_params=None, logging=None):
 
         """Constructor for OutputSdmxMl.
 
@@ -78,7 +78,7 @@ class OutputSdmxMl(OutputBase):
             Defaults to False.
         """
         OutputBase.__init__(self, inputs, schema, output_folder, translations,
-            indicator_options, request_params=request_params)
+            indicator_options, request_params=request_params, logging=logging)
         self.header_id = header_id
         self.sender_id = sender_id
         self.structure_specific = structure_specific
@@ -126,7 +126,10 @@ class OutputSdmxMl(OutputBase):
             })
 
             if self.constrain_data:
+                before = data.size
                 data = indicator.get_data_matching_schema(self.data_schema, data=data)
+                after = data.size
+                self.warn('Removed ' + str(before - after) + ' (out of ' + str(before) + ') rows when constraining data for ' + indicator_id)
 
             data = data.replace(np.nan, '', regex=True)
             if data.empty:
