@@ -468,7 +468,10 @@ def open_sdg_input_from_dict(params, options):
         'InputJsonStat',
         'InputPxWebApi',
         'InputOpenDataPlatformMeta',
+        'InputJsonStat',
+        'InputPxWebApi',
         'InputWordMeta',
+        'InputSdgMetadata',
     ]
     if input_class not in allowed:
         raise KeyError("Input class '%s' is not one of: %s." % (input_class, ', '.join(allowed)))
@@ -517,6 +520,8 @@ def open_sdg_input_from_dict(params, options):
         input_instance = sdg.inputs.InputOpenDataPlatformMeta(**params)
     elif input_class == 'InputWordMeta':
         input_instance = sdg.inputs.InputWordMeta(**params)
+    elif input_class == 'InputSdgMetadata':
+        input_instance = sdg.inputs.InputSdgMetadata(**params)
 
     return input_instance
 
