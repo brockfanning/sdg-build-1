@@ -246,24 +246,13 @@ class InputBase(Loggable):
         ---------
         meta : dict or None
         """
-        if not meta or meta is None:
-            if len(self.meta_alterations) > 0:
-                meta = {}
-            else:
-                return meta
-        for alteration in self.meta_alterations:
-            try:
-                meta = alteration(meta, {
-                    'indicator_id': indicator_id,
-                    'indicator_name': indicator_name,
-                    'data': data
-                })
-            except:
-                # Handle callbacks without the context parameter.
-                meta = alteration(meta)
-        if meta is None:
-            raise Exception('Metadata alteration functions should return the altered dict.')
-        return meta
+        return helpers.alterations.alter_meta(
+            self.meta_alterations,
+            meta,
+            indicator_id=indicator_id,
+            indicator_name=indicator_name,
+            data=data
+        )
 
 
     def alter_indicator_id(self, indicator_id, indicator_name=None, data=None, meta=None):
@@ -274,21 +263,13 @@ class InputBase(Loggable):
         indicator_id : string
             The raw indicator ID
         """
-        # Perform any alterations on the indicator id.
-        if len(self.indicator_id_alterations) > 0:
-            for alteration in self.indicator_id_alterations:
-                try:
-                    indicator_id = alteration(indicator_id, {
-                        'indicator_name': indicator_name,
-                        'data': data,
-                        'meta': meta
-                    })
-                except:
-                    # Handle callbacks without the context parameter.
-                    indicator_id = alteration(indicator_id)
-        # Always make sure that dots are replaced with dashes.
-        indicator_id = indicator_id.replace('.', '-')
-        return indicator_id
+        return helpers.alterations.alter_indicator_id(
+            self.indicator_id_alterations,
+            indicator_id,
+            indicator_name=indicator_name,
+            data=data,
+            meta=meta
+        )
 
 
     def alter_indicator_name(self, indicator_name, indicator_id, data=None, meta=None):
@@ -301,19 +282,13 @@ class InputBase(Loggable):
         indicator_id : string
             The indicator id (eg, 1.1.1, 1-1-1, etc.) for this indicator
         """
-        # Perform any alterations on the indicator id.
-        if len(self.indicator_name_alterations) > 0:
-            for alteration in self.indicator_name_alterations:
-                try:
-                    indicator_name = alteration(indicator_name, {
-                        'indicator_id': indicator_id,
-                        'data': data,
-                        'meta': meta
-                    })
-                except:
-                    # Handle callbacks without the context parameter.
-                    indicator_name = alteration(indicator_name)
-        return indicator_name
+        return helpers.alterations.alter_indicator_name(
+            self.indicator_name_alterations,
+            indicator_name,
+            indicator_id,
+            data=data,
+            meta=meta
+        )
 
 
     def add_data_alteration(self, alteration):
@@ -409,20 +384,8 @@ class InputBase(Loggable):
 
 
     def apply_column_map(self, data):
-        if self.column_map is not None:
-            column_map=pd.read_csv(self.column_map)
-            column_dict = dict(zip(column_map['Text'], column_map['Value']))
-            data.rename(columns=column_dict, inplace=True)
-        return data
+        return helpers.alterations.apply_column_map(self.column_map, data)
 
 
     def apply_code_map(self, data):
-        if self.code_map is not None:
-            code_map=pd.read_csv(self.code_map)
-            code_dict = {}
-            for _, row in code_map.iterrows():
-                if row['Dimension'] not in code_dict:
-                    code_dict[row['Dimension']] = {}
-                code_dict[row['Dimension']][row['Text']] = row['Value']
-            data.replace(to_replace=code_dict, value=None, inplace=True)
-        return data
+        return helpers.alterations.apply_code_map(self.code_map, data)
