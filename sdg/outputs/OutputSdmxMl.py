@@ -36,7 +36,9 @@ class OutputSdmxMl(OutputBase):
                  indicator_options=None, dsd=None, default_values=None,
                  header_id=None, sender_id=None, structure_specific=False,
                  column_map=None, code_map=None, constrain_data=False,
-                 request_params=None, logging=None, constrain_meta=True):
+                 request_params=None, constrain_meta=True,
+                 meta_ref_area=None, meta_reporting_type=None,
+                 logging=None):
 
         """Constructor for OutputSdmxMl.
 
@@ -46,8 +48,10 @@ class OutputSdmxMl(OutputBase):
         3. All values in the columns correspond exactly to codes in those dimensions' codelists or a code mapping is specified
 
         Notes on translation:
-        SDMX output does not need to be transated. Hence, this output will always appear in
+        SDMX data output does not need to be transated. Hence, data will always appear in
         an "sdmx" folder, and will never be translated in a language subfolder.
+        By contrast, metadata IS language-specific to metadata will appear in
+        the language folders, as with other outputs.
 
         Parameters
         ----------
@@ -78,6 +82,15 @@ class OutputSdmxMl(OutputBase):
         constrain_data : boolean
             Whether to use the DSD to remove any rows of data that are not compliant.
             Defaults to False.
+        constrain_meta : boolean
+            Whether to use the metadata schema to remove any metadata fields that are
+            not complaint. Defaults to True.
+        meta_ref_area : string
+            REF_AREA code to use in the metadata output. If omitted, will use
+            the first available in a REF_AREA data column.
+        meta_reporting_type : string
+            REPORTING_TYPE code to use in the metadata output. If omitted, will use
+            the first available in a REPORTING_TYPE data column.
         """
         OutputBase.__init__(self, inputs, schema, output_folder, translations,
             indicator_options, request_params=request_params, logging=logging)
@@ -96,6 +109,8 @@ class OutputSdmxMl(OutputBase):
             os.makedirs(sdmx_folder, exist_ok=True)
         self.sdmx_folder = sdmx_folder
         self.default_values = {} if default_values is None else default_values
+        self.meta_ref_area = meta_ref_area
+        self.meta_reporting_type = meta_reporting_type
 
 
     def retrieve_dsd(self, dsd):
@@ -104,12 +119,10 @@ class OutputSdmxMl(OutputBase):
 
     def build(self, language=None):
         """Write the SDMX output. Overrides parent."""
-        file_loader = FileSystemLoader('templates')
-        env = Environment(loader=file_loader)
-        metadata_template = env.get_template('sdmx_metadata.xml')
         status = True
         all_serieses = {}
-        all_serieses_metadata = {}
+        all_metadata_serieses = []
+        metadata_template = Template(self.get_metadata_template())
         dfd = DataflowDefinition(id="OPEN_SDG_DFD", structure=self.dsd)
         time_period = next(dim for dim in self.dsd.dimensions if dim.id == 'TIME_PERIOD')
         header_info = self.get_header_info()
@@ -120,8 +133,13 @@ class OutputSdmxMl(OutputBase):
         metadata_language = language
         if language is not None:
             language = None
-        else:
+        if metadata_language is None:
+            meta_folder = os.path.join(self.output_folder, 'sdmx', 'meta')
             metadata_language = 'en'
+        else:
+            meta_folder = os.path.join(self.output_folder, metadata_language, 'sdmx', 'meta')
+        if not os.path.exists(meta_folder):
+            os.makedirs(meta_folder, exist_ok=True)
 
         metadata_base_vars = header_info.copy()
         metadata_base_vars['language'] = metadata_language
@@ -178,6 +196,18 @@ class OutputSdmxMl(OutputBase):
             all_serieses.update(serieses)
 
             # Now the metadata.
+            reporting_type = self.meta_reporting_type
+            if reporting_type is None and 'REPORTING_TYPE' in data.columns and data.length:
+                reporting_type = self.get_first_value_from_data_column(data, 'REPORTING_TYPE')
+            ref_area = self.meta_ref_area
+            if ref_area is None and 'REF_AREA' in data.columns and data.length:
+                ref_area = self.get_first_value_from_data_column(data, 'REF_AREA')
+
+            # We can only do SDMX metadata if we know the ref area and reporting type.
+            if ref_area is None or reporting_type is None:
+                print('Unable to produce SDMX metadata because of missing ref area or reporting type.')
+                continue
+
             series_codes = helpers.sdmx.get_all_series_codes_from_indicator_id(indicator_id,
                 dsd_path=self.dsd_path,
                 request_params=self.request_params,
@@ -189,20 +219,34 @@ class OutputSdmxMl(OutputBase):
             concept_items = [{ 'key': key, 'value': value } for key, value in concepts.items()]
             for code in series_codes:
                 metadata_series = {
-                    'set_id': uuid.uuidv4(),
+                    'set_id': uuid.uuid4(),
                     'series': code,
-                    'reporting_type': 'G',
-                    'ref_area': '1',
+                    'reporting_type': reporting_type,
+                    'ref_area': ref_area,
                     'concepts': concept_items,
                 }
                 metadata_serieses.append(metadata_series)
-            print(metadata_serieses)
+
+            metadata = metadata_base_vars.copy()
+            metadata['serieses'] = metadata_serieses
+            metadata_sdmx = metadata_template.render(metadata)
+            meta_path = os.path.join(meta_folder, indicator_id + '.xml')
+            with open(meta_path, 'w') as f:
+                status = status & f.write(metadata_sdmx)
+            all_metadata_serieses = all_metadata_serieses + metadata_serieses
 
         dataset = self.create_dataset(all_serieses)
         msg = DataMessage(data=[dataset], dataflow=dfd, header=header, observation_dimension=time_period)
         all_sdmx_path = os.path.join(self.sdmx_folder, 'all.xml')
         with open(all_sdmx_path, 'wb') as f:
             status = status & f.write(sdmx.to_xml(msg))
+
+        metadata = metadata_base_vars.copy()
+        metadata['serieses'] = all_metadata_serieses
+        metadata_sdmx = metadata_template.render(metadata)
+        meta_path = os.path.join(meta_folder, 'all.xml')
+        with open(meta_path, 'w') as f:
+            status = status & f.write(metadata_sdmx)
 
         return status
 
@@ -215,7 +259,7 @@ class OutputSdmxMl(OutputBase):
             id=info['id'],
             test=info['test'],
             prepared=info['prepared'],
-            sender=info['sender'],
+            sender=Agency(id=info['sender']),
         )
 
 
@@ -237,6 +281,11 @@ class OutputSdmxMl(OutputBase):
             'prepared': time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(timestamp)),
             'sender': sender_id,
         }
+
+
+    def get_first_value_from_data_column(self, data, column):
+        index = data[column].first_valid_index()
+        return data[column].loc[index]
 
 
     def create_dataset(self, serieses):
