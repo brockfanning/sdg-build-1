@@ -36,9 +36,8 @@ class OutputSdmxMl(OutputBase):
                  indicator_options=None, dsd=None, default_values=None,
                  header_id=None, sender_id=None, structure_specific=False,
                  column_map=None, code_map=None, constrain_data=False,
-                 request_params=None, constrain_meta=True,
-                 meta_ref_area=None, meta_reporting_type=None,
-                 logging=None):
+                 request_params=None, constrain_meta=True, logging=None,
+                 meta_ref_area=None, meta_reporting_type=None):
 
         """Constructor for OutputSdmxMl.
 
@@ -104,10 +103,16 @@ class OutputSdmxMl(OutputBase):
         self.data_schema = DataSchemaInputSdmxDsd(source=self.dsd)
         self.column_map = column_map
         self.code_map = code_map
+
         sdmx_folder = os.path.join(output_folder, 'sdmx')
         if not os.path.exists(sdmx_folder):
             os.makedirs(sdmx_folder, exist_ok=True)
         self.sdmx_folder = sdmx_folder
+        meta_folder = os.path.join(sdmx_folder, 'meta')
+        if not os.path.exists(meta_folder):
+            os.makedirs(meta_folder, exist_ok=True)
+        self.meta_folder = meta_folder
+
         self.default_values = {} if default_values is None else default_values
         self.meta_ref_area = meta_ref_area
         self.meta_reporting_type = meta_reporting_type
@@ -120,6 +125,13 @@ class OutputSdmxMl(OutputBase):
     def build(self, language=None):
         """Write the SDMX output. Overrides parent."""
         status = True
+
+        # The SDMX output is a special case, and does not need to be
+        # translated separately for each language. So we only continue
+        # if this is an untranslated or language-agnostic build.
+        if language is not None and language != 'untranslated':
+            return status
+
         all_serieses = {}
         all_metadata_serieses = []
         metadata_template = Template(self.get_metadata_template())
@@ -128,24 +140,10 @@ class OutputSdmxMl(OutputBase):
         header_info = self.get_header_info()
         header = self.create_header(header_info)
 
-        # SDMX data output is language-agnostic. Only the DSD contains language info.
-        # But for metadata, language is important.
-        metadata_language = language
-        if language is not None:
-            language = None
-        if metadata_language is None:
-            meta_folder = os.path.join(self.output_folder, 'sdmx', 'meta')
-            metadata_language = 'en'
-        else:
-            meta_folder = os.path.join(self.output_folder, metadata_language, 'sdmx', 'meta')
-        if not os.path.exists(meta_folder):
-            os.makedirs(meta_folder, exist_ok=True)
-
         metadata_base_vars = header_info.copy()
-        metadata_base_vars['language'] = metadata_language
 
         for indicator_id in self.get_indicator_ids():
-            indicator = self.get_indicator_by_id(indicator_id).language(language)
+            indicator = self.get_indicator_by_id(indicator_id)
             data = indicator.data.copy()
 
             self.apply_column_map(data)
@@ -160,42 +158,46 @@ class OutputSdmxMl(OutputBase):
             })
 
             if self.constrain_data:
-                before = data.size
+                before = len(data)
                 data = indicator.get_data_matching_schema(self.data_schema, data=data)
-                after = data.size
-                self.warn('Removed ' + str(before - after) + ' (out of ' + str(before) + ') rows when constraining data for ' + indicator_id)
+                after = len(data)
+                message = '{indicator_id} - Removed {difference} rows while constraining data (out of {total}).'
+                difference = str(before - after)
+                self.warn(message, indicator_id=indicator_id, difference=difference, total=before)
 
             data = data.replace(np.nan, '', regex=True)
-            if data.empty:
-                continue
+            if not data.empty:
 
-            serieses = {}
-            for _, row in data.iterrows():
-                series_key = self.dsd.make_key(SeriesKey, self.get_dimension_values(row, indicator))
-                series_key.attrib = self.get_series_attribute_values(row, indicator)
-                attributes = self.get_observation_attribute_values(row, indicator)
-                dimension_key = self.dsd.make_key(Key, values={
-                    'TIME_PERIOD': str(row['TIME_PERIOD']),
-                })
-                observation = Observation(
-                    series_key=series_key,
-                    dimension=dimension_key,
-                    attached_attribute=attributes,
-                    value_for=self.dsd.measures[0],
-                    value=row[self.dsd.measures[0].id],
-                )
-                if series_key not in serieses:
-                    serieses[series_key] = []
-                serieses[series_key].append(observation)
+                serieses = {}
+                for _, row in data.iterrows():
+                    series_key = self.dsd.make_key(SeriesKey, self.get_dimension_values(row, indicator))
+                    series_key.attrib = self.get_series_attribute_values(row, indicator)
+                    attributes = self.get_observation_attribute_values(row, indicator)
+                    dimension_key = self.dsd.make_key(Key, values={
+                        'TIME_PERIOD': str(row['TIME_PERIOD']),
+                    })
+                    observation = Observation(
+                        series_key=series_key,
+                        dimension=dimension_key,
+                        attached_attribute=attributes,
+                        value_for=self.dsd.measures[0],
+                        value=row[self.dsd.measures[0].id],
+                    )
+                    if series_key not in serieses:
+                        serieses[series_key] = []
+                    serieses[series_key].append(observation)
 
-            dataset = self.create_dataset(serieses)
-            msg = DataMessage(data=[dataset], dataflow=dfd, header=header, observation_dimension=time_period)
-            sdmx_path = os.path.join(self.sdmx_folder, indicator_id + '.xml')
-            with open(sdmx_path, 'wb') as f:
-                status = status & f.write(sdmx.to_xml(msg))
-            all_serieses.update(serieses)
+                dataset = self.create_dataset(serieses)
+                msg = DataMessage(data=[dataset], dataflow=dfd, header=header, observation_dimension=time_period)
+                sdmx_path = os.path.join(self.sdmx_folder, indicator_id + '.xml')
+                with open(sdmx_path, 'wb') as f:
+                    status = status & f.write(sdmx.to_xml(msg))
+                all_serieses.update(serieses)
 
-            # Now the metadata.
+            concepts = indicator.meta
+            if self.constrain_meta:
+                concepts = indicator.get_meta_matching_schema(self.schema)
+
             reporting_type = self.meta_reporting_type
             if reporting_type is None and 'REPORTING_TYPE' in data.columns and len(data) > 0:
                 reporting_type = self.get_first_value_from_data_column(data, 'REPORTING_TYPE')
@@ -203,37 +205,49 @@ class OutputSdmxMl(OutputBase):
             if ref_area is None and 'REF_AREA' in data.columns and len(data) > 0:
                 ref_area = self.get_first_value_from_data_column(data, 'REF_AREA')
 
-            # We can only do SDMX metadata if we know the ref area and reporting type.
-            if ref_area is None or reporting_type is None:
-                print('Unable to produce SDMX metadata because of missing ref area or reporting type.')
-                continue
+            if concepts and ref_area is not None and reporting_type is not None:
 
-            series_codes = helpers.sdmx.get_all_series_codes_from_indicator_id(indicator_id,
-                dsd_path=self.dsd_path,
-                request_params=self.request_params,
-            )
-            concepts = indicator.meta
-            if self.constrain_meta:
-                concepts = indicator.get_meta_matching_schema(self.schema)
-            metadata_serieses = []
-            concept_items = [{ 'key': key, 'value': value } for key, value in concepts.items()]
-            for code in series_codes:
-                metadata_series = {
-                    'set_id': uuid.uuid4(),
-                    'series': code,
-                    'reporting_type': reporting_type,
-                    'ref_area': ref_area,
-                    'concepts': concept_items,
-                }
-                metadata_serieses.append(metadata_series)
+                series_codes = helpers.sdmx.get_all_series_codes_from_indicator_id(indicator_id,
+                    dsd_path=self.dsd_path,
+                    request_params=self.request_params,
+                )
 
-            metadata = metadata_base_vars.copy()
-            metadata['serieses'] = metadata_serieses
-            metadata_sdmx = metadata_template.render(metadata)
-            meta_path = os.path.join(meta_folder, indicator_id + '.xml')
-            with open(meta_path, 'w') as f:
-                status = status & f.write(metadata_sdmx)
-            all_metadata_serieses = all_metadata_serieses + metadata_serieses
+                # Make sure the indicator is fully translated.
+                for language in self.all_languages:
+                    indicator.translate(language, self.translation_helper)
+
+                concept_items = []
+                for key in concepts:
+                    translation_items = []
+                    for language in self.all_languages:
+                        translated_value = indicator.language(language).get_meta_field_value(key)
+                        translation_items.append({
+                            'language': language,
+                            'value': translated_value,
+                        })
+                    concept_items.append({
+                        'key': key,
+                        'translations': translation_items,
+                    })
+
+                metadata_serieses = []
+                for code in series_codes:
+                    metadata_series = {
+                        'set_id': uuid.uuid4(),
+                        'series': code,
+                        'reporting_type': reporting_type,
+                        'ref_area': ref_area,
+                        'concepts': concept_items,
+                    }
+                    metadata_serieses.append(metadata_series)
+
+                metadata = metadata_base_vars.copy()
+                metadata['serieses'] = metadata_serieses
+                metadata_sdmx = metadata_template.render(metadata)
+                meta_path = os.path.join(self.meta_folder, indicator_id + '.xml')
+                with open(meta_path, 'w') as f:
+                    status = status & f.write(metadata_sdmx)
+                all_metadata_serieses = all_metadata_serieses + metadata_serieses
 
         dataset = self.create_dataset(all_serieses)
         msg = DataMessage(data=[dataset], dataflow=dfd, header=header, observation_dimension=time_period)
@@ -244,7 +258,7 @@ class OutputSdmxMl(OutputBase):
         metadata = metadata_base_vars.copy()
         metadata['serieses'] = all_metadata_serieses
         metadata_sdmx = metadata_template.render(metadata)
-        meta_path = os.path.join(meta_folder, 'all.xml')
+        meta_path = os.path.join(self.meta_folder, 'all.xml')
         with open(meta_path, 'w') as f:
             status = status & f.write(metadata_sdmx)
 
@@ -395,30 +409,21 @@ class OutputSdmxMl(OutputBase):
 
         indicator_ids = self.get_documentation_indicator_ids()
 
-        endpoint = 'sdmx/{indicator_id}.xml'
+        data_endpoint = 'sdmx/{indicator_id}.xml'
+        meta_endpoint = 'sdmx/meta/{indicator_id}.xml'
         output = '<p>' + self.get_documentation_description() + ' Examples are below:<p>'
 
         output += '<ul>'
-        path = endpoint.format(indicator_id='all')
-        output += '<li><a href="' + baseurl + path + '">' + path + '</a></li>'
+        data_path = data_endpoint.format(indicator_id='all')
+        meta_path = meta_endpoint.format(indicator_id='all')
+        output += '<li><a href="' + baseurl + data_path + '">' + data_path + ' (data)</a></li>'
+        output += '<li><a href="' + baseurl + meta_path + '">' + meta_path + ' (metadata)</a></li>'
         for indicator_id in indicator_ids:
-            path = endpoint.format(indicator_id=indicator_id)
-            output += '<li><a href="' + baseurl + path + '">' + path + '</a></li>'
+            data_path = data_endpoint.format(indicator_id=indicator_id)
+            meta_path = meta_endpoint.format(indicator_id=indicator_id)
+            output += '<li><a href="' + baseurl + data_path + '">' + data_path + ' (data)</a></li>'
+            output += '<li><a href="' + baseurl + meta_path + '">' + meta_path + ' (metadata)</a></li>'
         output += '<li>etc...</li>'
-        output += '</ul>'
-
-        if languages is None:
-            languages = ['']
-
-        endpoint = '{language}/sdmx/meta/{indicator_id}.xml'
-        output += '<ul>'
-        for language in languages:
-            path = endpoint.format(language=language, indicator_id='all')
-            output += '<li><a href="' + baseurl + path + '">' + path + '</a></li>'
-            for indicator_id in indicator_ids:
-                path = endpoint.format(language=language, indicator_id=indicator_id)
-                output += '<li><a href="' + baseurl + path + '">' + path + '</a></li>'
-            output += '<li>etc...</li>'
         output += '</ul>'
 
         return output
@@ -429,7 +434,10 @@ class OutputSdmxMl(OutputBase):
             "This output has an SDMX file for each indicator's data, "
             "plus one SDMX file with all indicator data. This data uses "
             "numbers and codes only, so is not specific to any language."
-            "The metadata is output separately in language folders."
+            "The metadata is output in a 'meta' subfolder' and similarly "
+            "has one per indicator plus an 'all' file. Translations of "
+            "the metadata are included in each file using the 'lang' "
+            "attribute."
         )
         return description
 
@@ -482,7 +490,9 @@ class OutputSdmxMl(OutputBase):
       <gen:AttributeSet>
         {% for concept in series.concepts %}
         <gen:ReportedAttribute id="{{ concept.key }}">
-          <com:Text xml:lang="{{ language }}"><![CDATA[{{ concept.value }}]]></com:Text>
+          {% for translation in concept.translations %}
+          <com:Text xml:lang="{{ translation.language }}"><![CDATA[{{ translation.value }}]]></com:Text>
+          {% endfor %}
         </gen:ReportedAttribute>
         {% endfor %}
       </gen:AttributeSet>
