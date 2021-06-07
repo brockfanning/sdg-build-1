@@ -99,7 +99,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
     if indicator_options is None:
         indicator_options = open_sdg_indicator_options_defaults()
     if logging is None:
-        logging = ['warnings']
+        logging = ['warn']
 
     status = True
 
@@ -373,6 +373,7 @@ def open_sdg_prep(options):
         translations=options['translations'],
         indicator_options=options['indicator_options'],
         data_schema=data_schema,
+        logging=options['logging'],
         **datapackage_params,
     ))
 
@@ -386,6 +387,7 @@ def open_sdg_prep(options):
             translations=options['translations'],
             indicator_options=options['indicator_options'],
             data_schema=data_schema,
+            logging=options['logging'],
             **csvw_params,
         ))
 
@@ -399,6 +401,7 @@ def open_sdg_prep(options):
             output_folder=options['site_dir'],
             translations=options['translations'],
             indicator_options=options['indicator_options'],
+            logging=options['logging'],
             **options['sdmx_output']
         ))
 
