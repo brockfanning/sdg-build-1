@@ -14,10 +14,17 @@ class InputBase(Loggable):
         Optional dict of parameters to be passed to remote file fetches.
         Corresponds to the options passed to a urllib.request.Request.
         @see https://docs.python.org/3/library/urllib.request.html#urllib.request.Request
+    column_map: string
+        Remote URL of CSV column mapping or path to local CSV column mapping file
+    code_map: string
+        Remote URL of CSV code mapping or path to local CSV code mapping file
+    meta_suffix: string
+        String to add to each metadata key. Intended usage is to allow identical
+        sets of metadata - one for global and one for national.
     """
 
-    def __init__(self, logging=None, request_params=None,
-                 column_map=None, code_map=None):
+    def __init__(self, logging=None, column_map=None, code_map=None, request_params=None,
+                 meta_suffix=None):
         """Constructor for InputBase."""
         Loggable.__init__(self, logging=logging)
         self.request_params = request_params
@@ -32,6 +39,7 @@ class InputBase(Loggable):
         self.num_previously_merged_inputs = 0
         self.column_map = column_map
         self.code_map = code_map
+        self.meta_suffix = meta_suffix
 
 
     def execute_once(self, indicator_options):
@@ -258,6 +266,11 @@ class InputBase(Loggable):
                 meta = {}
             else:
                 return meta
+        if self.meta_suffix is not None:
+            for key in list(meta.keys()):
+                if not key.endswith(self.meta_suffix):
+                    meta[key + self.meta_suffix] = meta[key]
+                    del meta[key]
         for alteration in self.meta_alterations:
             try:
                 meta = alteration(meta, {
@@ -270,6 +283,7 @@ class InputBase(Loggable):
                 meta = alteration(meta)
         if meta is None:
             raise Exception('Metadata alteration functions should return the altered dict.')
+            meta = alteration(meta)
         return meta
 
 
