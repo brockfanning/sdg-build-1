@@ -17,9 +17,13 @@ SDG Build can **input** SDG data in the following formats:
 * Data in CSV files (long/tidy format)
 * Data (and minimal metadata) from SDMX-JSON and SDMX-ML
 * Data from a CKAN instance
+* Data in JSON-Stat format from an API
+* Data from a PxWeb API instance
 * Metadata in YAML files
 * Metadata in CSV files
 * Metadata in Excel files
+* Metadata in SDMX files
+* Metadata in Microsoft Word templates
 
 ## Ouputs
 
@@ -27,7 +31,9 @@ SDG Build can **output** SDG data in the following formats:
 
 * A particular JSON structure for data and metadata, expected by the [Open SDG](https://open-sdg.org) reporting platform.
 * GeoJSON for mapping (there is not a global standard for SDG GeoJSON at this time, so this is our best guess at a useful structure)
-* SDMX-ML output
+* SDMX-ML output (data and metadata)
+* Datapackages
+* CSVW
 
 ## Alterations of data, metadata, indicator ID, and indicator name
 
@@ -86,6 +92,14 @@ The reason this may be important is, for example, when the indicator name is bei
 SDG Build requires a schema for any metadata. Currently the following formats are supported:
 
 * YAML schema intended for Prose.io
+* SDMX MSD
+
+## Data schemas
+
+A data schema can be provided to control the sorting and validation of data. Currently the following formats are supported:
+
+* Table Schema (YAML)
+* SDMX DSD
 
 ## Translations
 
@@ -110,13 +124,6 @@ es:
 ```
 
 When using the InputYamlMdMeta class, this can be accomplished by creating subfolders for each language code, and adding pre-translated versions of the YAML files there.
-
-## Upcoming integrations
-
-Other inputs and outputs are either under development or planned for the future:
-
-* Output to SDMX, both SDMX-JSON and SDMX-ML
-* Input and output from/to CSV-W
 
 ## Usage
 

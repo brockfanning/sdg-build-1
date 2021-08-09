@@ -99,7 +99,7 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
     if indicator_options is None:
         indicator_options = open_sdg_indicator_options_defaults()
     if logging is None:
-        logging = ['warnings']
+        logging = ['warn']
 
     status = True
 
@@ -152,8 +152,8 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
     outputs = open_sdg_prep(options)
 
     for output in outputs:
-        if options['languages'] and output_is_translatable(output):
-            # If languages were provide, perform a translated build.
+        if options['languages']:
+            # If languages were provided, perform a translated build.
             status = status & output.execute_per_language(options['languages'])
             # Also provide an untranslated build.
             status = status & output.execute('untranslated')
@@ -373,6 +373,7 @@ def open_sdg_prep(options):
         translations=options['translations'],
         indicator_options=options['indicator_options'],
         data_schema=data_schema,
+        logging=options['logging'],
         **datapackage_params,
     ))
 
@@ -386,6 +387,7 @@ def open_sdg_prep(options):
             translations=options['translations'],
             indicator_options=options['indicator_options'],
             data_schema=data_schema,
+            logging=options['logging'],
             **csvw_params,
         ))
 
@@ -399,8 +401,30 @@ def open_sdg_prep(options):
             output_folder=options['site_dir'],
             translations=options['translations'],
             indicator_options=options['indicator_options'],
+            logging=options['logging'],
             **options['sdmx_output']
         ))
+
+    # Add Global SDMX output separately, if configured.
+    if 'sdmx_output_global' in options:
+        params = options['sdmx_output_global']
+        if type(params) is not dict:
+            params = {}
+        # Hardcode some options for global output.
+        params['inputs'] = inputs
+        params['schema'] = schema
+        params['output_folder'] = options['site_dir']
+        params['output_subfolder'] = 'sdmx-global'
+        params['translations'] = options['translations']
+        params['indicator_options'] = options['indicator_options']
+        params['logging'] = options['logging']
+        params['dsd'] = sdg.helpers.sdmx.get_dsd_url()
+        params['msd'] = None
+        params['structure_specific'] = True
+        params['constrain_data'] = True
+        params['constrain_meta'] = True
+        params['global_content_constraints'] = True
+        outputs.append(sdg.outputs.OutputSdmxMl(**params))
 
     return outputs
 
@@ -467,7 +491,10 @@ def open_sdg_input_from_dict(params, options):
         'InputExcelMeta',
         'InputYamlMeta',
         'InputSdmxMeta',
+        'InputJsonStat',
+        'InputPxWebApi',
         'InputWordMeta',
+        'InputSdgMetadata',
     ]
     if input_class not in allowed:
         raise KeyError("Input class '%s' is not one of: %s." % (input_class, ', '.join(allowed)))
@@ -506,8 +533,14 @@ def open_sdg_input_from_dict(params, options):
         input_instance = sdg.inputs.InputYamlMeta(**params)
     elif input_class == 'InputSdmxMeta':
         input_instance = sdg.inputs.InputSdmxMeta(**params)
+    elif input_class == 'InputJsonStat':
+        input_instance = sdg.inputs.InputJsonStat(**params)
+    elif input_class == 'InputPxWebApi':
+        input_instance = sdg.inputs.InputPxWebApi(**params)
     elif input_class == 'InputWordMeta':
         input_instance = sdg.inputs.InputWordMeta(**params)
+    elif input_class == 'InputSdgMetadata':
+        input_instance = sdg.inputs.InputSdgMetadata(**params)
 
     return input_instance
 
@@ -612,11 +645,3 @@ def open_sdg_schema_from_dict(params, options):
         schema_instance = sdg.schemas.SchemaInputSdmxMsd(**params)
 
     return schema_instance
-
-
-def output_is_translatable(output):
-    # Some types of output should never be translated.
-    if isinstance(output, sdg.outputs.OutputSdmxMl):
-        return False
-    else:
-        return True

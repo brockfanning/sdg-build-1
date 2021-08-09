@@ -9,7 +9,7 @@ class OutputBase(Loggable):
 
 
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
-                 indicator_options=None, logging=None):
+                 indicator_options=None, logging=None, request_params=None):
         """Constructor for OutputBase.
 
         inputs: list
@@ -25,11 +25,17 @@ class OutputBase(Loggable):
             Allows particular outputs to affect the data/metadata of indicators.
         logging: None or list
             Type of logs to print, including 'warn' and 'debug'.
+        request_params : dict or None
+            Optional dict of parameters to be passed to remote file fetches.
+            Corresponds to the options passed to a urllib.request.Request.
+            @see https://docs.python.org/3/library/urllib.request.html#urllib.request.Request
         """
         Loggable.__init__(self, logging=logging)
+        self.request_params = request_params
         if translations is None:
             translations = []
         self.indicator_options = IndicatorOptions() if indicator_options is None else indicator_options
+        self.all_languages = []
 
         self.indicators = self.merge_inputs(inputs)
         self.schema = schema
@@ -69,6 +75,9 @@ class OutputBase(Loggable):
             # Translate each indicator.
             for inid in self.indicators:
                 self.indicators[inid].translate(language, self.translation_helper)
+            # Track our languages for use later.
+            if language not in self.all_languages:
+                self.all_languages.append(language)
 
         # Now perform the build.
         status = self.build(language)
@@ -143,8 +152,8 @@ class OutputBase(Loggable):
 
     def execute_per_language(self, languages):
         """This helper triggers calls to execute() for each language."""
-        # Make sure we keep a copy of the originals before doing any translations.
         status = True
+        self.all_languages = languages
         for language in languages:
             status = status & self.execute(language)
 

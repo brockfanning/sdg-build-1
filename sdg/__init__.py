@@ -1,6 +1,6 @@
 """Supporting scripts for sdg-indicators build"""
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __author__ = "Doug Ashton <douglas.j.ashton@gmail.com>"
 
 # Load key components
@@ -16,6 +16,7 @@ from . import outputs
 from . import schemas
 from . import data_schemas
 from . import translations
+from . import helpers
 from .DisaggregationReportService import DisaggregationReportService
 from .DisaggregationStatusService import DisaggregationStatusService
 from .OutputDocumentationService import OutputDocumentationService

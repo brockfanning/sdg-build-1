@@ -15,7 +15,8 @@ class OutputDataPackage(OutputBase):
 
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
         indicator_options=None, data_schema=None, package_properties=None,
-        resource_properties=None, field_properties=None, sorting='alphabetical'):
+        resource_properties=None, field_properties=None, sorting='alphabetical',
+        logging=None):
         """Constructor for OutputDataPackage.
 
         Parameters
@@ -45,6 +46,7 @@ class OutputDataPackage(OutputBase):
             output_folder=output_folder,
             translations=translations,
             indicator_options=indicator_options,
+            logging=logging
         )
         self.top_level_package = None
         self.data_schema = data_schema
@@ -72,7 +74,9 @@ class OutputDataPackage(OutputBase):
         self.create_top_level_package('all', 'All indicators')
 
         backup_data_schema = DataSchemaInputIndicator(source=self.indicators)
+        data_schema_not_specified = False
         if self.data_schema is None:
+            data_schema_not_specified = True
             self.data_schema = backup_data_schema
 
         for indicator_id in self.get_indicator_ids():
@@ -81,13 +85,17 @@ class OutputDataPackage(OutputBase):
             Path(package_folder).mkdir(parents=True, exist_ok=True)
 
             indicator = self.get_indicator_by_id(indicator_id).language(language)
+            backup_schema_was_used = False
             data_schema_for_indicator = self.data_schema.get_schema_for_indicator(indicator)
             if data_schema_for_indicator is None:
+                backup_schema_was_used = True
                 data_schema_for_indicator = backup_data_schema.get_schema_for_indicator(indicator)
 
             # Clone the schema so that it can be sorted and translated.
             data_schema_for_indicator = Schema(dict(data_schema_for_indicator))
-            if self.sorting != 'default':
+            # We only sort the schema if it was not specified or if
+            # the backup schema was used.
+            if data_schema_not_specified or backup_schema_was_used:
                 self.sort_data_schema(data_schema_for_indicator)
             if language is not None:
                 self.translate_data_schema(data_schema_for_indicator, language)
