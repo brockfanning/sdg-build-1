@@ -261,7 +261,6 @@ class InputBase(Loggable):
             else:
                 return meta
         for alteration in self.meta_alterations:
-<<<<<<< HEAD
             try:
                 meta = alteration(meta, {
                     'indicator_id': indicator_id,
@@ -273,14 +272,12 @@ class InputBase(Loggable):
                 meta = alteration(meta)
         if meta is None:
             raise Exception('Metadata alteration functions should return the altered dict.')
-=======
             meta = alteration(meta)
         if self.meta_suffix is not None:
             for key in list(meta.keys()):
                 if not key.endswith(self.meta_suffix):
                     meta[key + self.meta_suffix] = meta[key]
                     del meta[key]
->>>>>>> 1.5.0-dev
         return meta
 
 
