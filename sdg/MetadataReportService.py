@@ -4,7 +4,7 @@ import pandas as pd
 from slugify import slugify
 from sdg.Loggable import Loggable
 
-class IndicatorReportService(Loggable):
+class MetadataReportService(Loggable):
     """Report generation to document metadata_fields in data."""
 
 
