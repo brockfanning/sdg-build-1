@@ -53,9 +53,8 @@ class IndicatorReportService(Loggable):
             - filename (string, suitable for writing to disk)
             - name (string, the name of the metadata_field)            
         """
-        url = "https://sdgdata.gov.uk/sdg-data/en/meta/all.json"
-        response = urllib.request.urlopen(url)
-        metadata = json.loads(response.read())
+        
+        metadata = self.outputs.output_meta()
         all_fields = {}
         allowed_fields=['computation_units',
 
