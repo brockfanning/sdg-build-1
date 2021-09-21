@@ -18,13 +18,13 @@ from . import data_schemas
 from . import translations
 from . import helpers
 from .DisaggregationReportService import DisaggregationReportService
-from .IndicatorReportService import IndicatorReportService
 from .DisaggregationStatusService import DisaggregationStatusService
 from .OutputDocumentationService import OutputDocumentationService
 from .Indicator import Indicator
 from .IndicatorDownloadService import IndicatorDownloadService
 from .IndicatorExportService import IndicatorExportService
 from .IndicatorOptions import IndicatorOptions
+from .MetadataReportService import MetadataReportService
 from .Series import Series
 from .build import build_data
 from .check_csv import check_all_csv
