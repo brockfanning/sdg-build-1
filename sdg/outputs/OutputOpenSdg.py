@@ -114,6 +114,35 @@ class OutputOpenSdg(OutputBase):
             download_service.write_index()
 
         return(status)
+    
+    def output_meta(self):
+        all_meta = dict()
+        site_dir = self.output_folder
+        
+         # Write the schema.
+        schema_output = sdg.schemas.SchemaOutputOpenSdg(schema=self.schema)
+        schema_output_folder = os.path.join(site_dir, 'meta')
+        schema_output.write_schema(output_folder=schema_output_folder, filename='schema.json')
+
+        # Write the translations.
+        translation_output = sdg.translations.TranslationOutputJson(self.translations)
+        translation_folder = os.path.join(site_dir, 'translations')
+        translation_output.write_translations(
+            language=language,
+            output_folder=translation_folder,
+            filename='translations.json'
+        )
+
+        for indicator_id in self.get_indicator_ids():
+            indicator = self.get_indicator_by_id(indicator_id).language(language)
+            
+            # Metadata
+            status = status & sdg.json.write_json(indicator_id, indicator.meta, ftype='meta', site_dir=site_dir)
+
+            # Append to the build-time "all" output
+            all_meta[indicator_id] = indicator.meta
+        
+        return all_meta    
 
 
     def generate_sort_order(self, indicator):
