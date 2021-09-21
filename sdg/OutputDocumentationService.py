@@ -80,12 +80,7 @@ class OutputDocumentationService(Loggable):
             indicator_url = self.indicator_url,
             extra_disaggregations = extra_disaggregations,
         )
-        self.metadata_report_service = sdg.MetadataReportService(
-            self.outputs,
-            languages = self.languages if translate_metadata else [],
-            translation_helper = self.translation_helper,
-            indicator_url = self.indicator_url,
-        )
+        
 
 
     def fix_folder(self, folder, subfolder):
