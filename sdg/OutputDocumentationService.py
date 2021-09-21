@@ -227,7 +227,15 @@ class OutputDocumentationService(Loggable):
         card_number += 1
         if card_number % 3 == 0:
             html += row_end
-
+        if card_number % 3 == 0:
+            html += row_start
+        html += self.get_index_card_template().format(
+            title='Metadata report',
+            description='These tables show information about the indicators.',
+            destination='metadata.html',
+            call_to_action='See metadata report'
+        )
+        card_number += 1
         if card_number % 3 != 0:
             html += row_end
 
@@ -277,6 +285,35 @@ class OutputDocumentationService(Loggable):
             self.write_disaggregation_detail_page(store[disaggregation])
             for disaggregation_value in store[disaggregation]['values']:
                 self.write_disaggregation_value_detail_page(store[disaggregation]['values'][disaggregation_value])
+                
+    def write_metadata_report(self):
+        service = self.metadata_report_service
+        store = self.metadata_report_service.get_metadata_field_store()
+
+        metadata_field_df = service.get_metadata_field_dataframe()
+        disaggregation_table = self.html_from_dataframe(metadata_field_df, table_id='metadata_field-table')
+        metadata_field_download_label = 'Download CSV of disaggregations'
+        metadata_field_download_file = 'metadata_field-report.csv'
+        metadata_field_download = self.get_csv_download(metadata_field_df, metadata_field_download_file, label=metadata_field_download_label)
+
+        indicator_df = service.get_indicators_dataframe()
+        indicator_table = self.html_from_dataframe(indicator_df, table_id='indicator-table')
+        indicator_download_label = 'Download CSV of indicators'
+        indicator_download_file = 'metadata_field-by-indicator-report.csv'
+        indicator_download = self.get_csv_download(indicator_df, indicator_download_file, label=indicator_download_label)
+
+        report_html = self.get_html('Metadata report', service.get_metadata_field_report_template().format(
+            metadata_field_download=metadata_field_download,
+            metadata_field_table=metadata_field_table,
+            indicator_download=indicator_download,
+            indicator_table=indicator_table
+        ))
+        self.write_page('metadata.html', report_html)
+
+        for metadata_field in store:
+            self.write_metadata_field_detail_page(store[metadata_field])
+            for metadata_field_value in store[metadata_field]['values']:
+                self.write_metadata_field_value_detail_page(store[metadata_field]['values'][metadata_field_value])
 
 
     def write_disaggregation_detail_page(self, info):
@@ -296,7 +333,32 @@ class OutputDocumentationService(Loggable):
         indicators_download = self.get_csv_download(indicators_df, indicators_download_file, label=indicators_download_label)
         indicators_table = self.html_from_dataframe(indicators_df, table_id='indicators-table')
 
-        detail_html = self.get_html('Disaggregation: ' + disaggregation, service.get_disaggregation_detail_template().format(
+        detail_html = self.get_html('Disaggregation: ' + disaggregation, service.get_disaggregation_value_detail_template().format(
+            values_download=values_download,
+            values_table=values_table,
+            indicators_download=indicators_download,
+            indicators_table=indicators_table
+        ))
+        self.write_page(filename, detail_html)
+    
+    def write_metadata_field_detail_page(self, info):
+        service = self.metadata_field_report_service
+        metadata_field = info['name']
+        filename = info['filename']
+
+        values_df = service.get_metadata_field_dataframe(info)
+        values_download_label = 'Download CSV of values used in this metadata field'
+        values_download_file = 'values--' + filename.replace('.html', '.csv')
+        values_download = self.get_csv_download(values_df, values_download_file, label=values_download_label)
+        values_table = self.html_from_dataframe(values_df, table_id='values-table')
+
+        indicators_df = service.get_metadata_field_indicator_dataframe(info)
+        indicators_download_label = 'Download CSV of indicators using this metadata field'
+        indicators_download_file = 'indicators--' + filename.replace('.html', '.csv')
+        indicators_download = self.get_csv_download(indicators_df, indicators_download_file, label=indicators_download_label)
+        indicators_table = self.html_from_dataframe(indicators_df, table_id='indicators-table')
+
+        detail_html = self.get_html('Metadata field ' + metadata_field, service.get_metadata_field_value_detail_template().format(
             values_download=values_download,
             values_table=values_table,
             indicators_download=indicators_download,
@@ -318,6 +380,24 @@ class OutputDocumentationService(Loggable):
         table = self.html_from_dataframe(df, table_id='disaggregation-value-table')
 
         html = self.get_html(disaggregation + ': ' + disaggregation_value, service.get_disaggregation_value_detail_template().format(
+            download=download,
+            table=table
+        ))
+        self.write_page(filename, html)
+    
+    def write_metadata_field_value_detail_page(self, info):
+        service = self.metadata_field_report_service
+        metadata_field = str(info['metadata_field'])
+        metadata_field_value = str(info['name'])
+        filename = info['filename']
+
+        df = service.get_metadata_field_value_dataframe(info)
+        download_label = 'Download CSV of indicators using this metadata field value'
+        download_file = filename.replace('.html', '.csv')
+        download = self.get_csv_download(df, download_file, label=download_label)
+        table = self.html_from_dataframe(df, table_id='metadata-field-value-table')
+
+        html = self.get_html(metadata_field + ': ' + metadata_field_value, service.get_metadata_field_value_detail_template().format(
             download=download,
             table=table
         ))
