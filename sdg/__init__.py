@@ -18,6 +18,7 @@ from . import data_schemas
 from . import translations
 from . import helpers
 from .DisaggregationReportService import DisaggregationReportService
+from .IndicatorReportService import IndicatorReportService
 from .DisaggregationStatusService import DisaggregationStatusService
 from .OutputDocumentationService import OutputDocumentationService
 from .Indicator import Indicator
