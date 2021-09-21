@@ -18,7 +18,7 @@ class OutputDocumentationService(Loggable):
     def __init__(self, outputs, folder='_site', branding='Build docs',
                  languages=None, intro='', translations=None, indicator_url=None,
                  subfolder=None, baseurl='', extra_disaggregations=None,
-                 translate_disaggregations=False, logging=None):
+                 translate_disaggregations=False, translate_metadata=False, logging=None):
         """Constructor for the OutputDocumentationService class.
 
         Parameters
