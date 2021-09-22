@@ -3,6 +3,7 @@ import sdg
 import pandas as pd
 from slugify import slugify
 from sdg.Loggable import Loggable
+from sdg.outputs import OutputOpenSdg
 
 class MetadataReportService(Loggable):
     """Report generation to document metadata_fields in data."""
@@ -54,7 +55,8 @@ class MetadataReportService(Loggable):
             - name (string, the name of the metadata_field)            
         """
         
-        metadata = outputs.output_meta()
+        
+        metadata = OutputOpenSdg.output_meta()
         all_fields = {}
         allowed_fields=['computation_units',
 
