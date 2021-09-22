@@ -54,7 +54,7 @@ class MetadataReportService(Loggable):
             - name (string, the name of the metadata_field)            
         """
         
-        metadata = self.outputs.output_meta()
+        metadata = outputs.output_meta()
         all_fields = {}
         allowed_fields=['computation_units',
 
