@@ -334,7 +334,7 @@ class OutputDocumentationService(Loggable):
         indicators_download = self.get_csv_download(indicators_df, indicators_download_file, label=indicators_download_label)
         indicators_table = self.html_from_dataframe(indicators_df, table_id='indicators-table')
 
-        detail_html = self.get_html('Disaggregation: ' + disaggregation, service.get_disaggregation_value_detail_template().format(
+        detail_html = self.get_html('Disaggregation: ' + disaggregation, service.get_disaggregation_detail_template().format(
             values_download=values_download,
             values_table=values_table,
             indicators_download=indicators_download,
@@ -359,7 +359,7 @@ class OutputDocumentationService(Loggable):
         indicators_download = self.get_csv_download(indicators_df, indicators_download_file, label=indicators_download_label)
         indicators_table = self.html_from_dataframe(indicators_df, table_id='indicators-table')
 
-        detail_html = self.get_html('Metadata field ' + metadata_field, service.get_metadata_field_value_detail_template().format(
+        detail_html = self.get_html('Metadata field ' + metadata_field, service.get_metadata_field_detail_template().format(
             values_download=values_download,
             values_table=values_table,
             indicators_download=indicators_download,
