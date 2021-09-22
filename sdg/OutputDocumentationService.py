@@ -151,6 +151,7 @@ class OutputDocumentationService(Loggable):
 
         self.write_index(pages)
         self.write_disaggregation_report()
+        self.write_metadata_report()
 
 
     def create_filename(self, title):
