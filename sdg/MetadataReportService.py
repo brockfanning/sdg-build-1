@@ -3,8 +3,7 @@ import sdg
 import pandas as pd
 from slugify import slugify
 from sdg.Loggable import Loggable
-from sdg.outputs import OutputOpenSdg
-from sdg.outputs import OutputBase
+import urllib.request
 
 class MetadataReportService(Loggable):
     """Report generation to document metadata_fields in data."""
