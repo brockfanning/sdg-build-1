@@ -142,7 +142,7 @@ class OutputOpenSdg(OutputBase):
             # Append to the build-time "all" output
             all_meta[indicator_id] = indicator.meta
         
-        return all_meta    
+        return self.all_meta    
 
 
     def generate_sort_order(self, indicator):
