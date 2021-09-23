@@ -117,7 +117,7 @@ class OutputOpenSdg(OutputBase):
     
     def output_meta(self):
         all_meta = dict()
-        site_dir = self.output_folder
+        site_dir = '_site'
         
          # Write the schema.
         schema_output = sdg.schemas.SchemaOutputOpenSdg(schema=self.schema)
