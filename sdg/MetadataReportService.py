@@ -173,7 +173,7 @@ class MetadataReportService(Loggable):
             return self.translation_helper.translate(text, language, default_group)
 
 
-    def get_metadata_field_dataframe(self):
+    def get_metadata_fields_dataframe(self):
         store = self.get_metadata_field_store()
         rows = []
         for metadata_field in store:
@@ -227,7 +227,7 @@ class MetadataReportService(Loggable):
         return df
 
 
-    def get_metadata_fields_dataframe(self, info):
+    def get_metadata_field_dataframe(self, info):
         rows = []
         for value in info['values']:
             row = {
