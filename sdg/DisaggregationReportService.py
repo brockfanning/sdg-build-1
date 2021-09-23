@@ -220,7 +220,6 @@ class DisaggregationReportService(Loggable):
 
 
     def get_disaggregation_dataframe(self, info):
-        print(info)
         rows = []
         for value in info['values']:
             row = {
