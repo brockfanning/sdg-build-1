@@ -94,7 +94,8 @@ class DisaggregationReportService(Loggable):
                     if indicator_id not in all_disaggregations[disaggregation]['values'][value]['indicators']:
                         all_disaggregations[disaggregation]['values'][value]['indicators'][indicator_id] = 0
                     all_disaggregations[disaggregation]['values'][value]['indicators'][indicator_id] += 1
-
+                    print(all_disaggregations)
+                    print(indicator_id)
                     all_disaggregations[disaggregation]['indicators'][indicator_id] = True
         self.disaggregation_store = all_disaggregations
         return self.disaggregation_store
