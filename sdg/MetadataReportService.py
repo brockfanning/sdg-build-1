@@ -42,9 +42,6 @@ class MetadataReportService(Loggable):
         self.translation_helper = translation_helper
         self.extra_metadata_fields = [] if extra_metadata_fields is None else extra_metadata_fields
         self.metadata_field_store = None
-        
-        OutputBase.__init__(self, inputs, schema, output_folder, translations,
-                            indicator_options, logging=logging)
 
 
     def get_metadata_field_store(self):
