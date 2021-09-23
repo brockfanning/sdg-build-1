@@ -343,7 +343,7 @@ class OutputDocumentationService(Loggable):
         self.write_page(filename, detail_html)
     
     def write_metadata_field_detail_page(self, info):
-        service = self.metadata_field_report_service
+        service = self.metadata_report_service
         metadata_field = info['name']
         filename = info['filename']
 
@@ -387,7 +387,7 @@ class OutputDocumentationService(Loggable):
         self.write_page(filename, html)
     
     def write_metadata_field_value_detail_page(self, info):
-        service = self.metadata_field_report_service
+        service = self.metadata_report_service
         metadata_field = str(info['metadata_field'])
         metadata_field_value = str(info['name'])
         filename = info['filename']
