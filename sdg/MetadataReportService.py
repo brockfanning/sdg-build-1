@@ -95,7 +95,7 @@ class MetadataReportService(Loggable):
                     all_fields[field]["values"][value] = {
                         "field": field,
                         "filename": "metadata-value--"+slugify(str(field))+".html",
-                        "indicators": [],
+                        "indicators": {},
                         "instances": 0,
                         "name": value
                 }
