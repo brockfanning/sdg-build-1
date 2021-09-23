@@ -228,6 +228,7 @@ class MetadataReportService(Loggable):
 
 
     def get_metadata_field_dataframe(self, info):
+        print(info)
         rows = []
         for value in info['values']:
             row = {
