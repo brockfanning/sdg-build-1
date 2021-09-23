@@ -103,8 +103,8 @@ class MetadataReportService(Loggable):
                 all_fields[field]["values"][value]["instances"] +=1
 
                 if indicator not in all_fields[field]["values"][value]["indicators"]:
-
-                    all_fields[field]["values"][value]["indicators"].append(indicator)
+                    all_fields[field]['values'][value]['indicators'][indicator] = 0
+                all_fields[field]['values'][value]['indicators'][indicator] +=1  
 
                 all_fields[field]["indicators"][indicator]= value
         self.metadata_field_store = all_fields
