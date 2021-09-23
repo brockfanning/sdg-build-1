@@ -292,7 +292,7 @@ class OutputDocumentationService(Loggable):
         store = self.metadata_report_service.get_metadata_field_store()
 
         metadata_field_df = service.get_metadata_field_dataframe()
-        disaggregation_table = self.html_from_dataframe(metadata_field_df, table_id='metadata-field-table')
+        metadata_table = self.html_from_dataframe(metadata_field_df, table_id='metadata-field-table')
         metadata_field_download_label = 'Download CSV of disaggregations'
         metadata_field_download_file = 'metadata_field-report.csv'
         metadata_field_download = self.get_csv_download(metadata_field_df, metadata_field_download_file, label=metadata_field_download_label)
