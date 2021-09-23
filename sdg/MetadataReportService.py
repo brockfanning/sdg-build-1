@@ -4,6 +4,7 @@ import pandas as pd
 from slugify import slugify
 from sdg.Loggable import Loggable
 from sdg.outputs import OutputOpenSdg
+from sdg.outputs import OutputBase
 
 class MetadataReportService(Loggable):
     """Report generation to document metadata_fields in data."""
@@ -41,6 +42,9 @@ class MetadataReportService(Loggable):
         self.translation_helper = translation_helper
         self.extra_metadata_fields = [] if extra_metadata_fields is None else extra_metadata_fields
         self.metadata_field_store = None
+        
+        OutputBase.__init__(self, inputs, schema, output_folder, translations,
+                            indicator_options, logging=logging)
 
 
     def get_metadata_field_store(self):
@@ -56,7 +60,9 @@ class MetadataReportService(Loggable):
         """
         
         
-        metadata = OutputOpenSdg.output_meta(self)
+        url = "https://sdgdata.gov.uk/sdg-data/en/meta/all.json"
+        response = urllib.request.urlopen(url)
+        metadata = json.loads(response.read())
         all_fields = {}
         allowed_fields=['computation_units',
 
