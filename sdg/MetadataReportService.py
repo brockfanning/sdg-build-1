@@ -211,7 +211,6 @@ class MetadataReportService(Loggable):
     def get_indicators_dataframe(self):
         grouped = self.group_metadata_field_store_by_indicator()
         store = self.get_metadata_field_store()
-        print(grouped)
         rows = []
         for indicator in grouped:
             metadata_field_links = [self.get_metadata_field_link(metadata_field) for metadata_field in grouped[indicator].values()]
