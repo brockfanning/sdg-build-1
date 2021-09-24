@@ -140,7 +140,7 @@ class MetadataReportService(Loggable):
 
 
     def group_metadata_field_store_by_indicator(self):
-        store = self.get_metadata_field_store(all_meta)
+        store = self.get_metadata_field_store()
         grouped = {}
         for metadata_field in store:
             for indicator in store[metadata_field]['indicators']:
@@ -173,7 +173,7 @@ class MetadataReportService(Loggable):
 
 
     def get_metadata_fields_dataframe(self):
-        store = self.get_metadata_field_store(all_meta)
+        store = self.get_metadata_field_store()
         rows = []
         for metadata_field in store:
 
@@ -210,6 +210,7 @@ class MetadataReportService(Loggable):
 
     def get_indicators_dataframe(self, info):
         grouped = self.group_metadata_field_store_by_indicator()
+        print(grouped)
         rows = []
         for indicator in grouped:
             metadata_field_links = [self.get_metadata_field_link(metadata_field) for metadata_field in grouped[indicator].values()]
@@ -227,7 +228,6 @@ class MetadataReportService(Loggable):
 
 
     def get_metadata_field_dataframe(self, info):
-        print(info)
         rows = []
         for value in info['values']:
             row = {
