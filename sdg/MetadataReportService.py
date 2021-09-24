@@ -230,7 +230,6 @@ class MetadataReportService(Loggable):
         for value in info['values']:
             row = {
                 'Value': self.get_metadata_field_value_link(info['values'][value]),
-                'metadata_field combinations using this value': info['values'][value]['instances'],
                 'Number of indicators': len(info['values'][value]['indicators'].keys()),
             }
             for language in self.get_languages():
@@ -239,7 +238,7 @@ class MetadataReportService(Loggable):
 
         columns = ['Value']
         columns.extend(self.get_languages())
-        columns.extend(['metadata_field combinations using this value', 'Number of indicators'])
+        columns.extend(['Number of indicators'])
 
         df = pd.DataFrame(rows, columns=columns)
         if not df.empty:
@@ -263,10 +262,9 @@ class MetadataReportService(Loggable):
         rows = []
         for indicator_id in info['indicators']:
             rows.append({
-                'Indicator': self.get_indicator_link(indicator_id),
-                'metadata_field combinations using this value': info['indicators'][indicator_id]
+                'Indicator': self.get_indicator_link(indicator_id)
             })
-        df = pd.DataFrame(rows, columns=['Indicator', 'metadata_field combinations using this value'])
+        df = pd.DataFrame(rows, columns=['Indicator'])
         if not df.empty:
             df.sort_values(by=['Indicator'], inplace=True)
         return df
@@ -277,12 +275,12 @@ class MetadataReportService(Loggable):
         <div role="navigation" aria-describedby="contents-heading">
             <h2 id="contents-heading">On this page</h2>
             <ul>
-                <li><a href="#by-metadata_field">By metadata_field</a></li>
+                <li><a href="#by-metadata_field">By metadata field</a></li>
                 <li><a href="#by-indicator">By indicator</a></li>
             </ul>
         </div>
         <div>
-            <h2 id="by-metadata_field" tabindex="-1">By metadata_field</h2>
+            <h2 id="by-metadata_field" tabindex="-1">By metadata field</h2>
             {metadata_field_download}
             {metadata_field_table}
         </div>
@@ -299,17 +297,17 @@ class MetadataReportService(Loggable):
         <div role="navigation" aria-describedby="contents-heading">
             <h2 id="contents-heading">On this page</h2>
             <ul>
-                <li><a href="#values-used">Values used in metadata_field</a></li>
+                <li><a href="#values-used">Values used in metadata field</a></li>
                 <li><a href="#indicators-using">Indicators using metadata_field</a></li>
             </ul>
         </div>
         <div>
-            <h2 id="values-used" tabindex="-1">Values used in metadata_field</h2>
+            <h2 id="values-used" tabindex="-1">Values used in metadata field</h2>
             {values_download}
             {values_table}
         </div>
         <div>
-            <h2 id="indicators-using" tabindex="-1">Indicators using metadata_field</h2>
+            <h2 id="indicators-using" tabindex="-1">Indicators using metadata field</h2>
             {indicators_download}
             {indicators_table}
         </div>
