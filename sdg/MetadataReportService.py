@@ -44,7 +44,7 @@ class MetadataReportService(Loggable):
         self.metadata_field_store = None
 
 
-    def get_metadata_field_store(self, metadata):
+    def get_metadata_field_store(self):
         """Analyzes the data in and compiles information about indicators.
         Returns
         -------
