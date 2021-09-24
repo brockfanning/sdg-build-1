@@ -44,7 +44,7 @@ class MetadataReportService(Loggable):
         self.metadata_field_store = None
 
 
-    def get_metadata_field_store(self):
+    def get_metadata_field_store(self, metadata):
         """Analyzes the data in and compiles information about indicators.
         Returns
         -------
@@ -57,9 +57,6 @@ class MetadataReportService(Loggable):
         """
         
         
-        url = "https://sdgdata.gov.uk/sdg-data/en/meta/all.json"
-        response = urllib.request.urlopen(url)
-        metadata = json.loads(response.read())
         all_fields = {}
         allowed_fields=['computation_units',
 
