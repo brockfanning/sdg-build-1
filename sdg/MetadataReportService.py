@@ -227,7 +227,7 @@ class MetadataReportService(Loggable):
                 'Graph type': ', '.join(self.get_metadata_field_value_link(store['graph_type']['values'][store['graph_type']['indicators'][indicator]])) if indicator in store['graph_type']['indicators'] else ', '
             })
                 
-        df = pd.DataFrame(rows, columns=['Indicator', 'metadata_fields'])
+        df = pd.DataFrame(rows, columns=['Indicator', 'Computation units', 'Data non-statistical', 'Data show map', 'National geographical coverage', 'Reporting status', 'UN designated tier', 'Graph type'])
         if not df.empty:
             df.sort_values(by=['Indicator'], inplace=True)
         return df
