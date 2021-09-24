@@ -55,7 +55,9 @@ class MetadataReportService(Loggable):
             - filename (string, suitable for writing to disk)
             - name (string, the name of the metadata_field)            
         """
-        
+        url = "https://sdgdata.gov.uk/sdg-data/en/meta/all.json"
+        response = urllib.request.urlopen(url)
+        metadata = json.loads(response.read())
         
         all_fields = {}
         allowed_fields=['computation_units',
@@ -206,7 +208,7 @@ class MetadataReportService(Loggable):
         return self.languages
 
 
-    def get_indicators_dataframe(self):
+    def get_indicators_dataframe(self, info):
         grouped = self.group_metadata_field_store_by_indicator()
         rows = []
         for indicator in grouped:
@@ -215,10 +217,10 @@ class MetadataReportService(Loggable):
                 continue
             rows.append({
                 'Indicator': self.get_indicator_link(indicator),
-                'metadata_fields': ', '.join(metadata_field_links),
-                'Number of metadata_fields': len(metadata_field_links),
+                'computation_units': ', '.join(metadata_field_links),
             })
-        df = pd.DataFrame(rows, columns=['Indicator', 'metadata_fields', 'Number of metadata_fields'])
+                
+        df = pd.DataFrame(rows, columns=['Indicator', 'metadata_fields'])
         if not df.empty:
             df.sort_values(by=['Indicator'], inplace=True)
         return df
