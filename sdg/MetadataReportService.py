@@ -138,7 +138,7 @@ class MetadataReportService(Loggable):
 
 
     def group_metadata_field_store_by_indicator(self):
-        store = self.get_metadata_field_store()
+        store = self.get_metadata_field_store(all_meta)
         grouped = {}
         for metadata_field in store:
             for indicator in store[metadata_field]['indicators']:
@@ -171,7 +171,7 @@ class MetadataReportService(Loggable):
 
 
     def get_metadata_fields_dataframe(self):
-        store = self.get_metadata_field_store()
+        store = self.get_metadata_field_store(all_meta)
         rows = []
         for metadata_field in store:
 
