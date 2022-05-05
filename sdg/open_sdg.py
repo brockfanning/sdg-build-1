@@ -10,6 +10,7 @@ functionality of the following legacy functions that were specific to Open SDG:
 """
 
 import os
+import json
 import inspect
 import importlib
 import sdg
@@ -133,6 +134,10 @@ def open_sdg_build(src_dir='', site_dir='_site', schema_file='_prose.yml',
     }
     # Allow for a config file to update these.
     options = open_sdg_config(config, defaults)
+
+    # Save a dict of these raw options for writing to JSON later.
+    raw_options = options.copy()
+    options['raw_options'] = raw_options
 
     if options['schema'] is None:
         options['schema'] = open_sdg_schema_defaults(options['schema_file'])
@@ -329,7 +334,8 @@ def open_sdg_prep(options):
         indicator_options=options['indicator_options'],
         indicator_downloads=options['indicator_downloads'],
         logging=options['logging'],
-        indicator_export_filename=options['indicator_export_filename'])
+        indicator_export_filename=options['indicator_export_filename'],
+        raw_options=options['raw_options'])
 
     outputs = [opensdg_output]
 

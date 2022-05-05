@@ -1,4 +1,5 @@
 import os
+import json
 import sdg
 from sdg.outputs import OutputBase
 from sdg.data import write_csv
@@ -10,7 +11,8 @@ class OutputOpenSdg(OutputBase):
 
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
         reporting_status_extra_fields=None, indicator_options=None,
-        indicator_downloads=None, logging=None, indicator_export_filename='all_indicators'):
+        indicator_downloads=None, logging=None, indicator_export_filename='all_indicators',
+        raw_options=None):
         """Constructor for OutputOpenSdg.
 
         Parameters
@@ -34,6 +36,7 @@ class OutputOpenSdg(OutputBase):
         self.reporting_status_grouping_fields = reporting_status_extra_fields
         self.indicator_downloads = indicator_downloads
         self.indicator_export_filename = indicator_export_filename
+        self.raw_options = raw_options
 
 
     def build(self, language=None):
@@ -107,6 +110,12 @@ class OutputOpenSdg(OutputBase):
                     download['output_folder']
                 )
             download_service.write_index()
+
+        # Write the raw options.
+        if self.raw_options is not None:
+            options_output_path = os.path.join(site_dir, 'stats', 'options.json')
+            with open(options_output_path, 'w') as options_output_file:
+                json.dump(self.raw_options, options_output_file)
 
         return(status)
 
