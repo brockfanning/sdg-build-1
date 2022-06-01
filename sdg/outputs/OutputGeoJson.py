@@ -2,6 +2,7 @@ import os
 import json
 import copy
 from urllib.request import urlopen
+from io import StringIO
 import csv
 import pandas as pd
 from sdg.outputs import OutputBase
@@ -124,9 +125,8 @@ class OutputGeoJson(OutputBase):
             data = file.read()
         file.close()
 
-        print(type(data))
-        print(data)
-        reader = csv.DictReader(data)
+        f = StringIO(data)
+        reader = csv.reader(f, delimiter=',')
         print('parsing csv for points data')
         for row in reader:
             print(row)
