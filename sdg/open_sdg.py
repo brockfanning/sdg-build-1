@@ -344,7 +344,7 @@ def open_sdg_prep(options):
         if not geojson_kwargs['geojson_file'].startswith('http'):
             geojson_file = os.path.join(options['src_dir'], geojson_kwargs['geojson_file'])
             geojson_kwargs['geojson_file'] = geojson_file
-        if geojson_kwargs['points_file'] and not geojson_kwargs['points_file'].startswith('http'):
+        if 'points_file' in geojson_kwargs and geojson_kwargs['points_file'] and not geojson_kwargs['points_file'].startswith('http'):
             points_file = os.path.join(options['src_dir'], geojson_kwargs['points_file'])
             geojson_kwargs['points_file'] = points_file
         # Create the output.
