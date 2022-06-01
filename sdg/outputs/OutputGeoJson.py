@@ -208,9 +208,13 @@ class OutputGeoJson(OutputBase):
             # Add points if needed.
             for row in self.points_data:
                 if 'latitude' in row and 'longitude' in row:
-                    properties = row.copy()
-                    del properties['latitude']
-                    del properties['longitude']
+                    properties = {}
+                    for key in row:
+                        if key == 'latitude' or key == 'longitude':
+                            continue
+                        key_t = self.translation_helper.translate(key, language, default_group=[key, 'data'])
+                        value_t = self.translation_helper.translate(row[key], language, default_group=[key, 'data'])
+                        properties[key_t] = value_t
                     geometry_data['features'].append({
                         'type': 'Feature',
                         'properties': properties,
