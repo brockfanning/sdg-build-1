@@ -2,7 +2,7 @@ import os
 import json
 import copy
 from urllib.request import urlopen
-import sdg
+import csv
 import pandas as pd
 from sdg.outputs import OutputBase
 
@@ -13,8 +13,8 @@ class OutputGeoJson(OutputBase):
     def __init__(self, inputs, schema, output_folder='_site', translations=None,
         geojson_file='regions.geojson', name_property='name', id_property='id',
         id_column='GeoCode', output_subfolder='regions', filename_prefix='indicator_',
-        exclude_columns=None, id_replacements=None, indicator_options=None,
-        logging=None):
+        exclude_columns=None, id_replacements=None, points_file=None,
+        indicator_options=None, logging=None):
         """Constructor for OutputGeoJson.
 
         Parameters
@@ -52,6 +52,12 @@ class OutputGeoJson(OutputBase):
             For example, maybe a "Region" column exists with the names of the
             regions as values. This can be used to "map" those region names to
             geocodes, and save you the work of maintaining a separate id column.
+        points_file : string
+            The path to a CSV file which contains data about "points" which
+            should be added to the GeoJSON. This CSV file must contain a column
+            called "latitude" and a column called "longitude", as well as 1 or
+            more other columns, all of which will be added as "properties" to
+            the GeoJSON feature.
         """
         if translations is None:
             translations = []
@@ -70,7 +76,9 @@ class OutputGeoJson(OutputBase):
         self.filename_prefix = filename_prefix
         self.exclude_columns = exclude_columns
         self.id_replacements = id_replacements
+        self.points_file = points_file
         self.geometry_data = self.fetch_geometry_data()
+        self.points_data = self.fetch_points_data()
 
 
     def fetch_geometry_data(self):
@@ -93,6 +101,33 @@ class OutputGeoJson(OutputBase):
 
         data = json.loads(data)
         return data
+
+
+    def fetch_points_data(self):
+        """Grab the data referenced by the "points_file" parameter.
+
+        Returns
+        -------
+        list
+            Parsed CSV as a Python list.
+        """
+        if self.points_file is None:
+            return []
+        file = None
+        data = None
+        rows = []
+        if self.points_file.startswith('http'):
+            file = urlopen(self.points_file)
+            data = file.read().decode('utf-8')
+        else:
+            file = open(self.points_file)
+            data = file.read()
+        file.close()
+
+        reader = csv.DictReader(data)
+        for row in reader:
+            rows.append(row)
+        return rows
 
 
     def indicator_has_geocodes(self, indicator):
@@ -138,6 +173,10 @@ class OutputGeoJson(OutputBase):
 
             # Loop through the features.
             for index, feature in enumerate(geometry_data['features']):
+                # If this is a point, then do other stuff.
+                if feature['geometry']['type'] == 'Point':
+                    # do stuff here.
+                    continue
                 geocode = feature['properties'][self.id_property]
                 # If there are no series for this geocode, skip it.
                 if geocode not in series_by_geocodes:
@@ -163,6 +202,23 @@ class OutputGeoJson(OutputBase):
                     del geometry_data['features'][index]['properties'][self.name_property]
                 if self.id_property != 'geocode':
                     del geometry_data['features'][index]['properties'][self.id_property]
+
+            # Add points if needed.
+            for row in self.points_data:
+                if 'latitude' in row and 'longitude' in row:
+                    properties = row.copy()
+                    del properties['latitude']
+                    del properties['longitude']
+                    geometry_data['features'].append({
+                        'type': 'Feature',
+                        'properties': properties,
+                        'geometry': {
+                            'type': 'Point',
+                            'coordinates': [row['longitude'], row['latitude']],
+                        },
+                    })
+
+
             # Finally write the updated GeoJSON file.
             filename = self.filename_prefix + indicator_id + '.geojson'
             filepath = os.path.join(target_folder, filename)
