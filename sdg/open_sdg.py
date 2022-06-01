@@ -340,12 +340,13 @@ def open_sdg_prep(options):
         }
         for key in map_layer:
             geojson_kwargs[key] = map_layer[key]
-            print(key)
-            print(map_layer[key])
         # If the geojson_file parameter is not remote, make sure it uses src_dir.
         if not geojson_kwargs['geojson_file'].startswith('http'):
             geojson_file = os.path.join(options['src_dir'], geojson_kwargs['geojson_file'])
             geojson_kwargs['geojson_file'] = geojson_file
+        if geojson_kwargs['points_file'] and not geojson_kwargs['points_file'].startswith('http'):
+            points_file = os.path.join(options['src_dir'], geojson_kwargs['points_file'])
+            geojson_kwargs['points_file'] = points_file
         # Create the output.
         outputs.append(sdg.outputs.OutputGeoJsonOpenSdg(**geojson_kwargs))
 
