@@ -124,6 +124,8 @@ class OutputGeoJson(OutputBase):
             data = file.read()
         file.close()
 
+        print(type(data))
+        print(data)
         reader = csv.DictReader(data)
         print('parsing csv for points data')
         for row in reader:
