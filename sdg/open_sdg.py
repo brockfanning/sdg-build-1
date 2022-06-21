@@ -8,8 +8,6 @@ functionality for easy use with Open SDG.
 
 import os
 import sys
-import inspect
-import importlib
 import sdg
 import yaml
 
