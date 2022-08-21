@@ -1,3 +1,4 @@
+from numpy import isin
 import sdg
 import pandas as pd
 import requests
@@ -18,7 +19,8 @@ class InputApi(InputBase):
 
     def __init__(self, endpoint, indicator_id_map=None, logging=None,
                  column_map=None, code_map=None, post_data=None,
-                 year_column=None, value_column=None, sleep=None):
+                 year_column=None, value_column=None, sleep=None,
+                 series_id_map=None):
         """Constructor for InputApi input.
 
         Parameters
@@ -30,6 +32,8 @@ class InputApi(InputBase):
             to the end of each API call.
         indicator_id_map : dict
             Map of API ids (such as "resource ids) to indicator ids.
+        series_id_map : dict
+            Map of API ids (such as "resource ids) to series ids.
         post_data : dict
             If passed, the request will be a POST instead of GET with the
             dict as the request payload.
@@ -42,6 +46,7 @@ class InputApi(InputBase):
         """
         self.endpoint = endpoint
         self.indicator_id_map = indicator_id_map
+        self.series_id_map = series_id_map
         self.post_data = post_data
         self.year_column = year_column
         self.value_column = value_column
@@ -102,6 +107,13 @@ class InputApi(InputBase):
             return resource_id
 
 
+    def get_series_id(self, resource_id):
+        if isinstance(self.series_id_map, dict):
+            if resource_id in self.series_id_map:
+                return self.series_id_map[resource_id]
+        return None
+
+
     def fetch_json_response(self, url):
         headers = { 'Accept': 'application/json' }
         post_data = self.get_post_data()
@@ -130,6 +142,13 @@ class InputApi(InputBase):
             data = self.indicator_data_from_json(json_response)
             if data is None:
                 continue
+
+            # Set the series if necessary.
+            series_id = self.get_series_id(resource_id)
+            if series_id is not None and series_id != '':
+                series_column = indicator_options.get_series_column()
+                data[series_column] = series_id
+
 
             columns = data.columns.to_list()
             if self.year_column is not None and self.year_column in columns:
