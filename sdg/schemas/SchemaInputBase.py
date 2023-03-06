@@ -53,6 +53,20 @@ class SchemaInputBase(Loggable):
             validator_class = jsonschema.validators.validator_for(self.schema)
             validator_class.check_schema(self.schema)
             self.validator = validator_class(self.schema)
+
+            BaseVal = jsonschema.Draft7Validator
+            # Build a new type checker
+            def is_datetime(checker, inst):
+                try:
+                    print(type(inst))
+                    datetime.datetime.strptime(inst, '%Y-%m-%d-%H.%M.%S.%f')
+                    return True
+                except ValueError:
+                    return False
+            date_check = BaseVal.TYPE_CHECKER.redefine(u'datetime', is_datetime)
+
+            # Build a validator with the new type checker
+            self.validator = jsonschema.validators.extend(self.validator, type_checker=date_check)
         except Exception as e:
             print(e)
 
