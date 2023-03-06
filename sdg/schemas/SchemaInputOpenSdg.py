@@ -88,7 +88,7 @@ class SchemaInputOpenSdg(SchemaInputBase):
                 jsonschema_field[jsonschema_key] = prose_field[prose_key]
 
         # Most Prose.io fields are general text, numbers, or true/false.
-        jsonschema_field['type'] = ['string', 'integer', 'number', 'boolean', 'datetime']
+        jsonschema_field['type'] = ['string', 'integer', 'number', 'boolean', 'date-time']
 
         # Everything else depends on what kind of element it is.
         el = prose_field['element']
