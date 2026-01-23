@@ -95,6 +95,16 @@ class InputPxFile(InputBase):
                 if 'INFO' in keywords:
                     metadata['graph_title'] = translation_group + '.graph_title'
                     metadata['indicator_name'] = translation_group + '.indicator_name'
+                if 'CONTACT' in keywords:
+                    metadata['CONTACT'] = translation_group + '.contact'
+                if 'LAST-UPDATED' in keywords:
+                    metadata['META_LAST_UPDATE'] = translation_group + '.meta_last_update'
+                if 'UPDATE-FREQUENCY' in keywords:
+                    metadata['FREQ_COLL'] = translation_group + '.freq_coll'
+                if 'NEXT-UPDATE' in keywords:
+                    metadata['REL_CAL_POLICY'] = translation_group + '.rel_cal_policy'
+                if 'SOURCE' in keywords:
+                    metadata['DATA_SOURCE'] = translation_group + '.data_source'
                 # As a benefit to the Open SGD integration, if the data
                 # is empty, automatically flag it as a non-statistical
                 # indicator.
