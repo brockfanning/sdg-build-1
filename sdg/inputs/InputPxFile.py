@@ -99,17 +99,8 @@ class InputPxFile(InputBase):
                     metadata['indicator_name'] = translation_group + '.indicator_name'
                 for mapped_key in self.meta_map:
                     if mapped_key in keywords:
-                        mapped_value = px.keyword(mapped_key)
                         converted_key = self.meta_map[mapped_key]
-                        if isinstance(mapped_value, str):
-                            metadata[converted_key] = translation_group + '.' + mapped_key
-                        elif isinstance(mapped_value, dict):
-                            value_keys = mapped_value.keys()
-                            for value_key in value_keys:
-                                if value_key == 'TABLE':
-                                    metadata[converted_key] = translation_group + '.' + mapped_key
-                                else:
-                                    metadata[converted_key + '-' + value_key] = translation_group + '.' + mapped_key + '-' + value_key
+                        metadata[converted_key] = translation_group + '.' + mapped_key
                 # As a benefit to the Open SGD integration, if the data
                 # is empty, automatically flag it as a non-statistical
                 # indicator.

@@ -98,18 +98,17 @@ class TranslationInputPx(TranslationInputBase):
                             if isinstance(metadata_value, str):
                                 self.add_translation(language, translation_group, mapped_key, metadata_value)
                             elif isinstance(metadata_value, dict):
-                                untranslated_value = px.keyword(mapped_key)
-                                value_keys = untranslated_value.keys()
+                                value_keys = metadata_value.keys()
+                                # Compile the dict values as an HTML list.
+                                html_list = '<ul class="px-metadata-list">'
                                 for value_key in value_keys:
                                     if value_key == 'TABLE':
-                                        self.add_translation(language, translation_group, mapped_key, metadata_value['TABLE'])
+                                        html_list += '<li>' + metadata_value['TABLE'] + '</li>'
                                     else:
-                                        # We assume this is a variable.
-                                        untranslated_variable = value_key
-                                        translated_variable = px.variable_get_translation_from_value(untranslated_variable, language)
-                                        self.add_translation(language, translation_group, mapped_key + '-' + value_key, metadata_value[translated_variable])
+                                        html_list += '<li><strong>' + value_key + '</strong>: ' + metadata_value[value_key] + '</li>'
+                                self.add_translation(language, translation_group, mapped_key, html_list)
                         except Exception as e:
-                            print(e)
+                            #print(e)
                             pass
 
     def get_meta_map(self, source):
