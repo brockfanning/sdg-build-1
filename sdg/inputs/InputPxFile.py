@@ -90,10 +90,7 @@ class InputPxFile(InputBase):
                 if not (px.data_has_units() and 'UNITS' in keywords):
                     metadata['computation_units'] = translation_group + '.computation_units'
                 if 'NOTEX' in keywords:
-                    notex_value = px.keyword('NOTEX')
-                    if isinstance(notex_value, str):
-                        #metadata['data_footnote'] = translation_group + '.data_footnote'
-                        metadata['page_content'] = translation_group + '.page_content'
+                    metadata['page_content'] = translation_group + '.page_content'
                 if 'INFO' in keywords:
                     metadata['graph_title'] = translation_group + '.graph_title'
                     metadata['indicator_name'] = translation_group + '.indicator_name'

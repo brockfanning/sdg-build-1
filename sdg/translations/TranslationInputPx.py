@@ -82,8 +82,12 @@ class TranslationInputPx(TranslationInputBase):
                     try:
                         metadata_value = px.keyword('NOTEX', language)
                         if isinstance(metadata_value, str):
-                            #self.add_translation(language, translation_group, 'data_footnote', metadata_value)
                             self.add_translation(language, translation_group, 'page_content', metadata_value)
+                        elif isinstance(metadata_value, dict):
+                            value_keys = metadata_value.keys()
+                            if 'TABLE' in value_keys:
+                                self.add_translation(language, translation_group, 'page_content', metadata_value['TABLE'])
+                            #TODO: Convert the rest of the dict to footnotes below the graph.
                     except:
                         pass
                     try:
@@ -99,7 +103,6 @@ class TranslationInputPx(TranslationInputBase):
                                 self.add_translation(language, translation_group, mapped_key, metadata_value)
                             elif isinstance(metadata_value, dict):
                                 value_keys = metadata_value.keys()
-                                # Compile the dict values as an HTML list.
                                 html_list = '<ul class="px-metadata-list">'
                                 for value_key in value_keys:
                                     if value_key == 'TABLE':
@@ -107,8 +110,7 @@ class TranslationInputPx(TranslationInputBase):
                                     else:
                                         html_list += '<li><strong>' + value_key + '</strong>: ' + metadata_value[value_key] + '</li>'
                                 self.add_translation(language, translation_group, mapped_key, html_list)
-                        except Exception as e:
-                            #print(e)
+                        except:
                             pass
 
     def get_meta_map(self, source):
